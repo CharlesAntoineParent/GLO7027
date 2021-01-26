@@ -1,11 +1,16 @@
+import configparser
 import json
 import os
 import operator
 import pandas as pd
 
+configParser = configparser.RawConfigParser()
+configFilePath = r'config.txt'
+configParser.read(configFilePath)
+dataPath = configParser.get('config', 'dataPath')
 
 def getArticle(p_hash):
-    fileInfoPath = f'data/train/{p_hash}'
+    fileInfoPath = f'{dataPath}/train/{p_hash}'
     selectedJsonFiles = [f'{fileInfoPath}--publication-info.json',f'{fileInfoPath}.json']
 
     ArticleInfo = list()
@@ -18,7 +23,7 @@ def getArticle(p_hash):
 
 def getDayInfo(p_date,p_journal) :
 
-    journalPath = f'data/analytics/{p_journal}/'
+    journalPath = f'{dataPath}/analytics/{p_journal}/'
 
     concernedFile = [f'{journalPath}{file}' for file in os.listdir(journalPath) if file.startswith(p_date)]
     
@@ -64,9 +69,3 @@ def dayPopularity(p_date,p_journal):
 
 test = dayPopularity('2019-02-01','lesoleil')
 test2=getArticle(max(test.items(), key=operator.itemgetter(1))[0])
-
-
-
-
-
-
