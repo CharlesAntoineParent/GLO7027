@@ -1,0 +1,25 @@
+nbCubes = 4;
+nbCouleurs = 4;
+nbFacePrisme = 4;
+nbPaireDeFace = 3;
+
+% Dans les vecteurs, 1 = rouge, 2 = bleu, 3 = jaune, 4 =vert
+cube1PaireDeFace = [{1,2},
+                    {4,1},
+                    {4,3}];
+                    
+cube2PaireDeFace = [{1,2},
+                    {4,4},
+                    {4,2}];
+                    
+                    
+cube3PaireDeFace = [{1,2},
+                    {3,3},
+                    {4,3}];
+                    
+                    
+cube4PaireDeFace = [{1,4},
+                    {2,3},
+                    {1,3}];
+
+
