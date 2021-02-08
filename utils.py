@@ -16,9 +16,12 @@ def getArticle(p_hash):
     selectedJsonFiles = [f'{fileInfoPath}--publication-info.json',f'{fileInfoPath}.json']
 
     ArticleInfo = list()
-    for file in selectedJsonFiles:
-        with open(file, 'r') as article:
-            ArticleInfo.append(json.load(article))
+    try:
+        for file in selectedJsonFiles:
+            with open(file, 'r') as article:
+                ArticleInfo.append(json.load(article))
+    except UnicodeDecodeError:
+        ArticleInfo = None       
     return ArticleInfo
 
 
@@ -114,81 +117,65 @@ def get_all_scores_and_view_per_organization_for_a_day(p_date):
 
     return dict_of_score_and_views_for_the_day
 
+def get_slug_from_org(p_hash):
+    slug_dict = {}
+    article = getArticle(p_hash)
+    if article is None:
+        return {}
+    for org in range(len(article[0])):
+        organization = article[0][org]["organizationKey"]
+        slug = article[0][org]["publications"][0]["slug"]["fr"]
+        slug_dict[organization] = slug.split("/")[:-1]
+    return slug_dict
+
+
+
+def get_popularity_and_slug(p_dict_of_scores):
+    slugs_and_score = {}
+    all_hashes = p_dict_of_scores.keys()
+    for hash in all_hashes:
+        try:
+            slugs = get_slug_from_org(hash)
+            slugs_and_score[hash]["slug_word"] = slugs
+            for org in slugs.keys():
+                slugs_and_score[hash]["slug_word"][org] = p_dict_of_scores[hash].loc[org]
+        except KeyError:
+            slugs_and_score[hash] = None
+        except UnicodeDecodeError:
+            slugs_and_score[hash] = None
+    return slugs_and_score
+
 
 
 if __name__ == "__main__":
     
-    #creation_date_article = dateutil.parser.parse(article_info[1]["creationDate"]).strftime("%Y-%m-%d") 
-    #views_and_score_by_organization_for_article = views_and_score_by_organization_for_article(creation_date_article ,hash_artile_test)
-    #views_and_score_by_organization_for_article
 
-
-    #organization_key = "ledroit"
-
-    #info_for_organizationledroit = dayInfoSummary(p_date, organization_key)
-    #info_for_organizationledroit = dict(list(info_for_organizationledroit.items())[0: 3]) 
-    #info_for_organizationledroit
-
-    #organization_key = "lesoleil"
-
-    #info_for_organizationsoleil = dayInfoSummary(p_date, organization_key)
-    #info_for_organizationsoleil = dict(list(info_for_organizationsoleil.items())[0: 3]) 
-    #info_for_organizationsoleil
     p_date = "2019-02-01"
     dict_info_total = get_all_scores_and_view_per_organization_for_a_day(p_date)
 
 
-    dict_info_total["e48d9e71949d83f3633a44e4cca242b5"]
+
 
     hash_artile_test = "d9b71cfa7d9dfcbae96e390180fd5335"
-    hash_artile_test = "e48d9e71949d83f3633a44e4cca242b5"
-    #article_info =getArticle(hash_artile_test)
-    #dict_info_total[hash_artile_test]
+    testing_hashes = ['0deb8dafb131e6ac8775b2d973c2c306', '4abda728af6e702ffdccecc714ed2fcf', '531fca26523a603539db1ebd7cb5203e', 'eb096788e215d7dd54e001d2cd4423ec', '32245de2f0c9ecc1cf701f7d9ab3485c', 'ec68cd02afeb06180152a15d8cfbf9a7', '465c91f8bc131f4ff55de9c9e7a5fbed', '45dbda2e61b75a1f526a968c546c8595', 'ae340e547032d3cefa0a4fabd23f4cbc', 'af6ba32b67c53e28988beb55cf80fab0']
+    for hash in testing_hashes:
+        test = getArticle(hash)
+        for org in range(len(test[0])):
+            print("hash: ", hash)
+            print("Organisation: ", test[0][org]["organizationKey"])
+            print("slug: ", test[0][org]["publications"][0]["slug"]["fr"])
+            print("url: ", test[1]["url"])
+            print("Scores: ")
+            print(dict_info_total[hash])
+            print("------------------------------------")
 
 
-    #info_for_organizationledroit["ff2d4b6b86b58f9cdc361eb5553b0480"]["View"] = 69
-    #info_for_organizationledroit
-    #a = {"b" : {"test" : 12}, "c" : {"test" : A"} }
-
-    #a = {"b" : {"d" : 12}, "c" : {"d" : 15}}
-    #a["c"]["d"] = "fuck off"
-    #a
-
-    #info_for_organizationledroit
+    #lenouvelliste = dayPopularity(p_date, "lenouvelliste")
+    #lenouvelliste["odeb8dafb131e6ac8775b2d973c2c306"]
 
 
-    #for key, value in a.items():
-    #    print(key, value)
+    test_slug_fun = get_slug_from_org("4abda728af6e702ffdccecc714ed2fcf")
 
+    test_slug_with_score = get_popularity_and_slug(dict_info_total)
 
-
-
-    #numpy_array = np.zeros((8, 6))
-    #numpy_array[7] = [1,2,3,4,5,6]
-    #numpy_array[7] += [6,5,4,3,2,1]
-
-
-
-    #np.random.seed(1618033)
-    #
-    ##Set 3 axis labels/dims
-    #years = np.arange(2000,2010) #Years
-    #samples = np.arange(0,20) #Samples
-    #patients = np.array(["patient_%d" % i for i in range(0,3)]) #Patients
-    #
-    ##Create random 3D array to simulate data from dims above
-    #A_3D = np.random.random((years.size, samples.size, len(patients))) #(10, 20, 3)
-    #
-    ## Create the MultiIndex from years, samples and patients.
-    #midx = pd.MultiIndex.from_product([years, samples, patients])
-    #
-    ## Create sample data for each patient, and add the MultiIndex.
-    #patient_data = pd.DataFrame(np.random.randn(len(midx), 3), index = midx)
-
-
-    #df = pd.DataFrame(a, columns=col_names, index=row_names)
-#
-    #dict_score_per_article_per_organisation = {"total" : {"views" : [0] * 5, "score" : 0}}
-#
-    #a = pd.dataframe( ["ledroit", "lesoleil", "lenouvelliste", "lequotidien", "latribune", "lavoixdelest"])
-    #a =  pd.DataFrame("organization" : ["ledroit", "lesoleil", "lenouvelliste", "lequotidien", "latribune", "lavoixdelest"])
+    dict_info_total["702a665363bc14d4e4259ccdd98e5afd"]
