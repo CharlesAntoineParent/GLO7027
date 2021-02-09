@@ -18,6 +18,13 @@ configFilePath = r'config.txt'
 configParser.read(configFilePath)
 dataPath = configParser.get('config', 'dataPath')
 
+seasons = [{'winter', (datetime.date(2019,  1,  1),  datetime.date(2019,  3, 20))},
+           {'spring', (datetime.date(2019,  3, 21),  datetime.date(2019,  6, 20))},
+           {'summer', (datetime.date(2019,  6, 21),  datetime.date(2019,  9, 22))},
+           {'autumn', (datetime.date(2019,  9, 23),  datetime.date(2019, 12, 20))},
+           {'winter', (datetime.date(2019, 12, 21),  datetime.date(2019, 12, 31))}]
+
+
 def getArtigleByPath(path):
     ArticleInfo = list()
     try:
@@ -32,6 +39,9 @@ def getArtigleByPath(path):
     except FileNotFoundError:
         return None
 
+    return ArticleInfo
+
+
 def getArticle(p_hash):
     fileInfoPath = f'{dataPath}/train/{p_hash}'
     selectedJsonFiles = [f'{fileInfoPath}--publication-info.json',f'{fileInfoPath}.json']
@@ -41,13 +51,12 @@ def getArticle(p_hash):
     return ArticleInfo
 
 
-
 def getDayInfo(p_date,p_journal):
 
     journalPath = f'{dataPath}/analytics/{p_journal}/'
 
     concernedFile = [f'{journalPath}{file}' for file in os.listdir(journalPath) if file.startswith(p_date)]
-    
+
     dayInfo = list()
 
     for day in concernedFile:
@@ -55,7 +64,7 @@ def getDayInfo(p_date,p_journal):
             dayInfo = json.load(file)
 
     return dayInfo
-    
+
 
 
 
@@ -82,7 +91,7 @@ def get_all_hash(p_date):
         info_of_the_day_for_organisation = dayInfoSummary(p_date, organization_key)
         for hash_article in info_of_the_day_for_organisation.keys():
             set_of_hash.add(hash_article)
-    
+
     return list(set_of_hash)
 
 
@@ -114,7 +123,7 @@ def get_all_scores_and_view_per_organization_for_a_day(p_date):
 
     for index, organization_key in enumerate(organization_keys):
         info_for_organization = dayInfoSummary(p_date, organization_key)
-        #info_for_organization = dict(list(info_for_organization.items())[0: 3]) 
+        #info_for_organization = dict(list(info_for_organization.items())[0: 3])
 
         for article_hash, views in info_for_organization.items():
 
@@ -175,14 +184,14 @@ def slug_and_score_by_article_by_lesoleil(p_hash, p_dict_with_score_info):
                 dict_score_slug["slug"] = slug
                 break
     except TypeError:
-        return None        
-    if p_dict_with_score_info[p_hash].loc["lesoleil"]["is_present"] == 0 or present_in_info != True: 
+        return None
+    if p_dict_with_score_info[p_hash].loc["lesoleil"]["is_present"] == 0 or present_in_info != True:
         return None
     dict_score_slug["score"] =  p_dict_with_score_info[p_hash].loc["lesoleil"]["score"]
     return dict_score_slug
 
 def extract_articles_by_day(day, train_test=True):
-    articles_in_month = extract_articles_by_month()
+    articles_in_month = extract_articles_by_month(day.month, train_test)
     articles = list()
 
     for article in articles_in_month:
@@ -210,10 +219,33 @@ def extract_articles_by_month(month, train_test=True):
     return articles
 
 
+def extract_articles_range(date_start, date_end, train_test=True):
+    if train_test:
+        subPath = "/train"
+    else:
+        subPath = "/test"
+    path = dataPath + subPath
+
+    articles = list()
+
+    for filename in os.listdir(path):
+        article = getArtigleByPath(filename)
+        date = article["creationDate"][:-14]
+        date = datetime.strptime(date, '%Y/%m/%d')
+        if date_start <= date < date_end:
+            articles.append(article)
+    return articles
+
+def extract_articles_in_season(season, train_test=True):
+
+    return extract_articles_range(seasons[season][0], seasons[season][1], train_test)
+
+
+
 
 
 if __name__ == "__main__":
-    
+
 
     p_date = "2019-02-01"
     dict_info_total = get_all_scores_and_view_per_organization_for_a_day(p_date)
