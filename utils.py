@@ -32,10 +32,10 @@ score_by_view_type = {'View': 1,
 
 all_organisations = ["latribune",
                      "lavoixdelest",
-                        "ledroit",
-                        "lenouvelliste",
-                        "lequotidien",
-                        "lesoleil"]
+                     "ledroit",
+                     "lenouvelliste",
+                     "lequotidien",
+                     "lesoleil"]
 
 
 def getArtigleByPath(path):
@@ -227,26 +227,27 @@ def extract_articles_by_day(day, train_test=True):
 
     for article in articles_in_month:
         date = article["creationDate"][:-14]
-        date = datetime.strptime(date, '%Y/%m/%d')
-        if date== day:
+        date = datetime.strptime(date, '%Y-%m-%d')
+        if date == day:
             articles.append(article)
     return articles
 
 def extract_articles_by_month(month, train_test=True):
     if train_test:
-        subPath = "/train"
+        subPath = "/train/"
     else:
-        subPath = "/test"
+        subPath = "/test/"
     path = dataPath + subPath
 
     articles = list()
 
     for filename in os.listdir(path):
-        article = getArtigleByPath(filename)
-        date = article["creationDate"][:-14]
-        date = datetime.strptime(date, '%Y/%m/%d')
-        if date.month == month:
-            articles.append(article)
+        if ("--publication-info" not in filename):
+            article = getArtigleByPath([path + filename])[0]
+            date = article["creationDate"][:-14]
+            date = datetime.strptime(date, '%Y-%m-%d')
+            if date.month == month:
+                articles.append(article)
     return articles
 
 
@@ -260,9 +261,9 @@ def extract_articles_range(date_start, date_end, train_test=True):
     articles = list()
 
     for filename in os.listdir(path):
-        article = getArtigleByPath(filename)
+        article = getArtigleByPath([filename])[0]
         date = article["creationDate"][:-14]
-        date = datetime.strptime(date, '%Y/%m/%d')
+        date = datetime.strptime(date, '%Y-%m-%d')
         if date_start <= date < date_end:
             articles.append(article)
     return articles
@@ -276,7 +277,6 @@ def extract_articles_in_season(season, train_test=True):
 
 
 if __name__ == "__main__":
-
 
     p_date = "2019-02-01"
     dict_info_total = get_all_scores_and_view_per_organization_for_a_day(p_date)
@@ -321,6 +321,16 @@ if __name__ == "__main__":
             print("Scores: ")
             print(dict_info_total[hash])
             print("------------------------------------")
+
+
+
+    # score_per_months = list()
+    #
+    # for month in range(1, 13):
+    #     articles_ion_month = extract_articles_by_month(month)
+    #     for article in articles_ion_month:
+    #         hash = article['hash']
+    #         score_per_months.append(get_views_by_hash(hash))
 
 
 
