@@ -30,6 +30,13 @@ score_by_view_type = {'View': 1,
                       'View30': 5,
                       'View60': 10}
 
+all_organisations = ["latribune",
+                     "lavoixdelest",
+                        "ledroit",
+                        "lenouvelliste",
+                        "lequotidien",
+                        "lesoleil"]
+
 
 def getArtigleByPath(path):
     ArticleInfo = list()
@@ -118,6 +125,21 @@ def get_score_from_views(views):
     for view_type, count in views.items():
         score += score_by_view_type[view_type] * count
     return score
+
+
+def get_views_by_hash(hash, organisations = all_organisations):
+    views = {'View':0,
+             'View5':0,
+             'View10':0,
+             'View30':0,
+             'View60':0}
+    for organisation in organisations:
+        analyticPath = f'{dataPath}/analytics/{organisation}'
+        for filename in os.listdir(analyticPath):
+            analytics = json.load(filename)
+            for view in analytics:
+                if view["hash"] == hash:
+                    views[view['name']]+=1
 
 
 def get_all_scores_and_view_per_organization_for_a_day(p_date):
