@@ -3,7 +3,7 @@ import json
 import os
 import operator
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
 import dateutil.parser
 import numpy as np
 import seaborn as sns
@@ -18,11 +18,17 @@ configFilePath = r'config.txt'
 configParser.read(configFilePath)
 dataPath = configParser.get('config', 'dataPath')
 
-seasons = [{'winter', (datetime.date(2019,  1,  1),  datetime.date(2019,  3, 20))},
-           {'spring', (datetime.date(2019,  3, 21),  datetime.date(2019,  6, 20))},
-           {'summer', (datetime.date(2019,  6, 21),  datetime.date(2019,  9, 22))},
-           {'autumn', (datetime.date(2019,  9, 23),  datetime.date(2019, 12, 20))},
-           {'winter', (datetime.date(2019, 12, 21),  datetime.date(2019, 12, 31))}]
+seasons = {'winter': (date(2019,  1,  1),  date(2019,  3, 20)),
+           'spring': (date(2019,  3, 21),  date(2019,  6, 20)),
+           'summer': (date(2019,  6, 21),  date(2019,  9, 22)),
+           'autumn': (date(2019,  9, 23),  date(2019, 12, 20)),
+           'winter': (date(2019, 12, 21),  date(2019, 12, 31))}
+
+score_by_view_type = {'View': 1,
+                      'View5': 1,
+                      'View10': 2,
+                      'View30': 5,
+                      'View60': 10}
 
 
 def getArtigleByPath(path):
@@ -107,8 +113,11 @@ def dayPopularity(p_date,p_journal):
 
     return dayPopularity
 
-
-
+def get_score_from_views(views):
+    score = 0
+    for view_type, count in views.items():
+        score += score_by_view_type[view_type] * count
+    return score
 
 
 def get_all_scores_and_view_per_organization_for_a_day(p_date):
@@ -127,7 +136,7 @@ def get_all_scores_and_view_per_organization_for_a_day(p_date):
 
         for article_hash, views in info_for_organization.items():
 
-            total_score = views['View'] + views['View5'] + (2 * views['View10']) + (5 * views['View30']) + (10 * views['View60'])
+            total_score = get_score_from_views(views)
             list_of_score = [1, views['View'], views['View5'], views['View10'], views['View30'], views['View60'], total_score]
 
             dict_of_score_and_views_for_the_day[article_hash][index] = list_of_score
@@ -154,7 +163,6 @@ def get_slug_from_org(p_hash):
     return slug_dict
 
 
-
 def get_popularity_and_slug(p_dict_of_scores):
     slugs_and_score = {}
     all_hashes = p_dict_of_scores.keys()
@@ -169,6 +177,7 @@ def get_popularity_and_slug(p_dict_of_scores):
         except UnicodeDecodeError:
             slugs_and_score[hash] = None
     return slugs_and_score
+
 
 def slug_and_score_by_article_by_lesoleil(p_hash, p_dict_with_score_info):
     dict_score_slug = {}
