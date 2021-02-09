@@ -7,6 +7,9 @@ import dateutil.parser
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+
+
+
 sns.set_theme(style="ticks", color_codes=True)
 
 tips = sns.load_dataset("tips")
@@ -193,7 +196,7 @@ if __name__ == "__main__":
 
     hash_article_test = "d9b71cfa7d9dfcbae96e390180fd5335"
     dict_slug_score_leSoleil = {"slug" : [], "score" :  [] }
-    for hash in list(dict_info_total.keys())[0:1000]:
+    for hash in list(dict_info_total.keys()):
         dict_value = slug_and_score_by_article_by_lesoleil(hash, p_dict_with_score_info = dict_info_total)
         if dict_value is not None:
             dict_slug_score_leSoleil["slug"].append(dict_value["slug"])
@@ -202,9 +205,20 @@ if __name__ == "__main__":
 
 
     test_dataframe = pd.DataFrame.from_dict(dict_slug_score_leSoleil)
-    test_dataframe = test_dataframe.groupby(['slug']).sum().reset_index()
+    test_dataframe.loc[(test_dataframe.slug == "actualite"), "slug"] = "actualites"
+    #test_dataframe = test_dataframe.groupby(['slug']).reset_index()
 
-    sns.catplot(x="slug", y="score", data=test_dataframe)
+    test_dataframe = test_dataframe.loc[(test_dataframe['slug'] == "actualites") or (test_dataframe['slug'] == "affaires")]
+
+
+    quantile_90 = test_dataframe["score"].quantile(0.90)
+
+
+    test_dataframe = test_dataframe.loc[test_dataframe['score'] < quantile_90]
+
+
+    sns.boxplot(x="slug", y="score", hue = ,data=test_dataframe)
+    plt.show()
     #test_2 = slug_and_score_by_article_by_lesoleil(hash_article_test)
 
 
