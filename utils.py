@@ -3,6 +3,7 @@ import json
 import os
 import operator
 import pandas as pd
+from datetime import datetime
 import dateutil.parser
 import numpy as np
 import seaborn as sns
@@ -17,13 +18,10 @@ configFilePath = r'config.txt'
 configParser.read(configFilePath)
 dataPath = configParser.get('config', 'dataPath')
 
-def getArticle(p_hash):
-    fileInfoPath = f'{dataPath}/train/{p_hash}'
-    selectedJsonFiles = [f'{fileInfoPath}--publication-info.json',f'{fileInfoPath}.json']
-
+def getArtigleByPath(path):
     ArticleInfo = list()
     try:
-        for file in selectedJsonFiles:
+        for file in path:
             with open(file, 'r') as article:
                 ArticleInfo.append(json.load(article))
 
@@ -33,6 +31,12 @@ def getArticle(p_hash):
         return None
     except FileNotFoundError:
         return None
+
+def getArticle(p_hash):
+    fileInfoPath = f'{dataPath}/train/{p_hash}'
+    selectedJsonFiles = [f'{fileInfoPath}--publication-info.json',f'{fileInfoPath}.json']
+
+    ArticleInfo = getArtigleByPath(selectedJsonFiles)
 
     return ArticleInfo
 
@@ -176,6 +180,35 @@ def slug_and_score_by_article_by_lesoleil(p_hash, p_dict_with_score_info):
         return None
     dict_score_slug["score"] =  p_dict_with_score_info[p_hash].loc["lesoleil"]["score"]
     return dict_score_slug
+
+def extract_articles_by_day(day, train_test=True):
+    articles_in_month = extract_articles_by_month()
+    articles = list()
+
+    for article in articles_in_month:
+        date = article["creationDate"][:-14]
+        date = datetime.strptime(date, '%Y/%m/%d')
+        if date== day:
+            articles.append(article)
+    return articles
+
+def extract_articles_by_month(month, train_test=True):
+    if train_test:
+        subPath = "/train"
+    else:
+        subPath = "/test"
+    path = dataPath + subPath
+
+    articles = list()
+
+    for filename in os.listdir(path):
+        article = getArtigleByPath(filename)
+        date = article["creationDate"][:-14]
+        date = datetime.strptime(date, '%Y/%m/%d')
+        if date.month == month:
+            articles.append(article)
+    return articles
+
 
 
 
