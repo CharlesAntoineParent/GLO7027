@@ -41,11 +41,11 @@ all_organisations = ["latribune",
                      "lesoleil"]
 
 
-def getArtigleByPath(path):
+def getArticleByPath(path):
     ArticleInfo = list()
     try:
         for file in path:
-            with open(file, 'r') as article:
+            with open(file, encoding='utf-8') as article:
                 ArticleInfo.append(json.load(article))
 
     except UnicodeDecodeError:
@@ -62,7 +62,7 @@ def getArticle(p_hash):
     fileInfoPath = f'{dataPath}/train/{p_hash}'
     selectedJsonFiles = [f'{fileInfoPath}--publication-info.json',f'{fileInfoPath}.json']
 
-    ArticleInfo = getArtigleByPath(selectedJsonFiles)
+    ArticleInfo = getArticleByPath(selectedJsonFiles)
 
     return ArticleInfo
 
@@ -246,7 +246,7 @@ def extract_articles_by_month(month, train_test=True):
 
     for filename in os.listdir(path):
         if ("--publication-info" not in filename):
-            article = getArtigleByPath([path + filename])[0]
+            article = getArticleByPath([path + filename])[0]
             date = article["creationDate"][:-14]
             date = datetime.strptime(date, '%Y-%m-%d')
             if date.month == month:
@@ -264,7 +264,7 @@ def extract_articles_range(date_start, date_end, train_test=True):
     articles = list()
 
     for filename in os.listdir(path):
-        article = getArtigleByPath([filename])[0]
+        article = getArticleByPath([filename])[0]
         date = article["creationDate"][:-14]
         date = datetime.strptime(date, '%Y-%m-%d')
         if date_start <= date < date_end:
@@ -281,6 +281,9 @@ def extract_articles_in_season(season, train_test=True):
 
 if __name__ == "__main__":
 
+
+    test = getArticle("ffffdb06d44290491c301af0a08a2e5b")
+    test[1]["title"]["fr"]
     p_date = "2019-02-01"
     dict_info_total = get_all_scores_and_view_per_organization_for_a_day(p_date)
 
