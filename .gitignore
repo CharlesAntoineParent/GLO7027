@@ -2,3 +2,5 @@ config.txt
 data
 .vscode
 .DS_Store
+.pdf
+.png
