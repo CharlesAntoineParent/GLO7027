@@ -43,17 +43,16 @@ all_organisations = ["latribune",
 
 def getArticleByPath(path):
     ArticleInfo = list()
-    try:
-        for file in path:
-            with open(file, encoding='utf-8') as article:
+
+    for file in selectedJsonFiles:
+        try:
+            with open(file, 'r') as article:
+                ArticleInfo.append(json.load(article))
+        except FileNotFoundError:
+            file = file.replace('train','test')
+            with open(file, 'r') as article:
                 ArticleInfo.append(json.load(article))
 
-    except UnicodeDecodeError:
-        return None
-    except NameError:
-        return None
-    except FileNotFoundError:
-        return None
 
     return ArticleInfo
 
@@ -353,6 +352,27 @@ if __name__ == "__main__":
 
 
 
+def journalSummary(p_journal):
+
+    journalSummary = dict()
+    dateRange = pd.date_range(start = '2019-01-01', end = '2019-07-31')
+    for p_date in dateRange:
+        p_date = (str(p_date).split(' ')[0])
+        print(p_date)
+        dayInfo = getDayInfo(p_date,p_journal)
+
+        
+        for view in dayInfo :
+            try:
+                journalSummary[view['hash']][view['name']] += 1
+            except KeyError:
+                journalSummary[view['hash']] = {'View':0,'View5':0,'View10':0,'View30':0,'View60':0}
+                journalSummary[view['hash']][view['name']] += 1
+    
+    return journalSummary
+
+
+
 
     #lenouvelliste = dayPopularity(p_date, "lenouvelliste")
     #lenouvelliste["odeb8dafb131e6ac8775b2d973c2c306"]
@@ -361,6 +381,7 @@ if __name__ == "__main__":
     #test_slug_fun = get_slug_from_org("eb096788e215d7dd54e001d2cd4423ec")
 
     #test_slug_with_score = get_popularity_and_slug(dict_info_total)
+
 
     #test = getArticle("eb096788e215d7dd54e001d2cd4423ec")
     #dict_info_total["eb096788e215d7dd54e001d2cd4423ec"]

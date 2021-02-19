@@ -1,6 +1,8 @@
 config.txt
 data
 .vscode
+.pickle
+.pk
 .DS_Store
 .pdf
 .png
