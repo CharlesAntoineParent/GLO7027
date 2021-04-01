@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     #client = MongoClient("mongodb+srv://Charles:Charles7027@cluster0.y7acq.mongodb.net/GLO-7027-13?retryWrites=true&w=majority") #Charles
     #client = MongoClient("mongodb+srv://Vincent :Vincent7027@cluster0.y7acq.mongodb.net/GLO-7027-13?retryWrites=true&w=majority") Vincent
-    #client = MongoClient("mongodb+srv://Olivier:Olivier7027@cluster0.y7acq.mongodb.net/GLO-7027-13?retryWrites=true&w=majority") # Olivier
+    client = MongoClient("mongodb+srv://Olivier:Olivier7027@cluster0.y7acq.mongodb.net/GLO-7027-13?retryWrites=true&w=majority") # Olivier
     
     client = MongoClient(port=27017)
     db=client.get_database("GLO-7027-13")
