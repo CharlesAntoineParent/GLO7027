@@ -25,7 +25,6 @@ if __name__ == '__main__':
 
     f, ax = plt.subplots(figsize=(7, 6))
     ax = df_channel["channel"].value_counts(normalize=True).head(6).plot(kind = "barh")
-    plt.title("Fréquences des valeurs de channel", fontsize=20)
     plt.xlabel("Fréquence", fontsize=18)
     plt.ylabel("Channel", fontsize=18)
     ax.xaxis.grid(True)
@@ -34,13 +33,5 @@ if __name__ == '__main__':
 
 
 
-        f, ax = plt.subplots(figsize=(7, 6))
-    ax = df_slug["slug_1"].value_counts(normalize=True).head(6).plot(kind = "barh")
-    plt.title("Fréquence des slugs des différentes sources", fontsize=20)
-    plt.ylabel("Slug", fontsize=18)
-    plt.xlabel("Fréquence", fontsize=18)
-    ax.xaxis.grid(True)
-    ax.set_yticklabels(list(df_slug["slug_1"].value_counts(normalize=True).head(6).keys()), rotation=0, fontsize=16)
-    plt.show()
 
 

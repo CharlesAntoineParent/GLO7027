@@ -27,3 +27,5 @@ if __name__ == '__main__':
     plt.xlabel("Fréquence", fontsize=20)
     plt.ylabel("booléen externalIds.newscycle" , fontsize=20)
     plt.show()
+
+    

@@ -28,7 +28,6 @@ if __name__ == '__main__':
 
     f, ax = plt.subplots(figsize=(7, 6))
     ax = df_slug["slug_1"].value_counts(normalize=True).head(6).plot(kind = "barh")
-    plt.title("Fréquence des slugs des différentes sources", , fontsize=20)
     plt.ylabel("Slug", fontsize=18)
     plt.xlabel("Fréquence", fontsize=18)
     ax.xaxis.grid(True)
