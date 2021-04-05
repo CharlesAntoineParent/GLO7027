@@ -7,10 +7,17 @@ import pickle
 import re
 import nltk
 import matplotlib.pyplot as plt
+import numpy as np
+
+
+for i in data.keys():
+    for j in data[i].keys():
+        if len(data[i][j]['author']) > 1:
+            print(j)
 
 
 
-with open('articleByAuthor.pickle', 'rb') as handle:
+with open('data/article2019.pickle', 'rb') as handle:
     data = pickle.load(handle)
 
 
@@ -215,43 +222,46 @@ for journal in data.keys():
             auteur = [i for i in auteur if len(i) > 5]
             data[journal][article]['author'] = auteur
             
-            
-
-
-
-            
+                   
 
 
         except KeyError:
             data[journal][article]['author'] = list()        
 
-        
+
+
+list(data['lesoleil'].values())[0]
+
+
 journalisteDict = dict()
 
 
 for journal in data.keys():
     for article in data[journal].keys():
-        if len(data[journal][article]['author']) != 0 :
-            for autor in data[journal][article]['author']:
-                print(autor)
-                
-                try:
+        try:
+            if len(data[journal][article]['author']) != 0 :
+                for autor in data[journal][article]['author']:
+                    print(autor)
                     
-                    journalisteDict[autor]['count'] += 1
-                    journalisteDict[autor]['View'] += data[journal][article]['View']
-                    journalisteDict[autor]['View5'] += data[journal][article]['View5']
-                    journalisteDict[autor]['View10'] += data[journal][article]['View10']
-                    journalisteDict[autor]['View30'] += data[journal][article]['View30']
-                    journalisteDict[autor]['View60'] += data[journal][article]['View60']
+                    try:
+                        
+                        journalisteDict[autor]['count'] += 1
+                        journalisteDict[autor]['View'] += data[journal][article]['View']
+                        journalisteDict[autor]['View5'] += data[journal][article]['View5']
+                        journalisteDict[autor]['View10'] += data[journal][article]['View10']
+                        journalisteDict[autor]['View30'] += data[journal][article]['View30']
+                        journalisteDict[autor]['View60'] += data[journal][article]['View60']
 
-                except KeyError:
-                    journalisteDict[autor] = dict()
-                    journalisteDict[autor]['count'] = 1
-                    journalisteDict[autor]['View'] = data[journal][article]['View']
-                    journalisteDict[autor]['View5'] = data[journal][article]['View5']
-                    journalisteDict[autor]['View10'] = data[journal][article]['View10']
-                    journalisteDict[autor]['View30'] = data[journal][article]['View30']
-                    journalisteDict[autor]['View60'] = data[journal][article]['View60']
+                    except KeyError:
+                        journalisteDict[autor] = dict()
+                        journalisteDict[autor]['count'] = 1
+                        journalisteDict[autor]['View'] = data[journal][article]['View']
+                        journalisteDict[autor]['View5'] = data[journal][article]['View5']
+                        journalisteDict[autor]['View10'] = data[journal][article]['View10']
+                        journalisteDict[autor]['View30'] = data[journal][article]['View30']
+                        journalisteDict[autor]['View60'] = data[journal][article]['View60']
+        except KeyError:
+            pass
 
 
 maxCount = 1
@@ -267,6 +277,9 @@ journalisteDict
 
 test = sorted(journalisteDict.items(), key=lambda x: x[1]['count'], reverse=True)
 plt.hist([view['count'] for journal,view in journalisteDict.items()],40,(0,300))
+
+plt.ylabel("Nombre d'auteurs")
+plt.xlabel("Quantité d'article par auteur")   
 plt.show()
 
 
@@ -294,13 +307,61 @@ fig = plt.figure()
 ax = fig.add_axes([0,0,1,1])
 ax.axis('equal')
 viewLabel = ['View',  'View5',  'View10',  'View30',  'View60']
-ax.pie([sum(MoreThen200['View'].values),sum(MoreThen200['View5'].values),sum(MoreThen200['View10'].values),sum(MoreThen200['View30'].values),sum(MoreThen200['View60'].values)], labels = viewLabel,autopct='%1.2f%%')
+ax.pie([sum(Between5And200['View'].values),sum(Between5And200['View5'].values),sum(Between5And200['View10'].values),sum(Between5And200['View30'].values),sum(Between5And200['View60'].values)], labels = viewLabel,autopct='%1.2f%%')
 ax.set_title('Repartion des types de vues de journalistes avec moins de 5 aricles')
 plt.show()
 
 
-getArticle('d9b71cfa7d9dfcbae96e390180fd5335')[1]['chapters']
+for journal in data.keys():
+    for article in data[journal].keys():
+        df = data[journal][article]
+        data[journal][article]['score'] = df['View'] + df['View5'] + 2 *df['View10'] +  5 * df['View30'] + 10 *df['View60']
 
+myleneMoisanScore = list()
+OtherScore = list()
+jocelyneRicherScore = list()
+
+
+for journal in data.keys():
+    for article in data[journal].keys():
+        author =  data[journal][article]['author']
+        score =  data[journal][article]['score']
+        if "jocelyne richer" in author:
+            jocelyneRicherScore.append(score)
+
+        if "mylene moisan" in author:
+            myleneMoisanScore.append(score)
+        else:
+            OtherScore.append(score)
+
+myleneMoisanScore.sort()
+OtherScore.sort()
+jocelyneRicherScore.sort()
+myleneMoisanScore = myleneMoisanScore[round(0.1*len(myleneMoisanScore)):round(0.9*len(myleneMoisanScore))]
+OtherScore = OtherScore[round(0.1*len(OtherScore)):round(0.9*len(OtherScore))]
+jocelyneRicherScore = jocelyneRicherScore[round(0.1*len(jocelyneRicherScore)):round(0.9*len(jocelyneRicherScore))]
+
+
+
+data = [myleneMoisanScore,OtherScore,jocelyneRicherScore]
+label = ["Mylene Moisan", "Autres journalistes", "Jocelyne Richer"]
+plt.figure(figsize=(8,6))
+plt.hist(data, bins=list(range(0,400,40)), density=True, histtype='bar', color=colors, label=label)
+plt.xlabel("Score des articles", size=14)
+plt.ylabel("Fréquence représentant le nombre d'articles", size=14)
+plt.title("Distribution du score des articles pour différents auteurs")
+plt.legend(loc='upper right')
+plt.show()
+0xbe609eacbfca10f6e5504d39e3b113f808389056
+
+
+fig, axes = plt.subplots(nrows=2, ncols=2)
+ax0, ax1, ax2, ax3 = axes.flatten()
+
+colors = ['red', 'tan', 'lime']
+ax0.hist(data, bins=list(range(0,2000,100)), density=True, histtype='bar', color=colors, label=colors)
+ax0.legend(prop={'size': 10})
+ax0.set_title('bars with legend')
 
 if __name__ == '__main__':
 
@@ -310,11 +371,11 @@ if __name__ == '__main__':
 
     for journal in journaux:
 
-        allJournauxSummary[journal] = journalSummary(journal)
+        allJournauxSummary[journal] = journalSummary(journal,10)
         sleepUpdate = 1 / len(allJournauxSummary[journal].keys())
         
 
-        for articleHash in tqdm(allJournauxSummary[journal].keys()):
+        for articleHash in tqdm(list(allJournauxSummary[journal].keys())[0:1000]):
             sleep(sleepUpdate)
             try:
                 article = getArticle(articleHash)
@@ -336,21 +397,11 @@ if __name__ == '__main__':
         pickle.dump(allJournauxSummary, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-a = list(data['lesoleil'].keys())
-a.extend(list(data['latribune'].keys()))
-a.extend(list(data['lavoixdelest'].keys()))
-a.extend(list(data['ledroit'].keys()))
-a.extend(list(data['lenouvelliste'].keys()))
-a.extend(list(data['lequotidien'].keys()))
+auteur = list()
+for journal in allJournauxSummary.keys():
 
-count = 0
-presentFile = 0
-for article in list(set(a)):
-    try:
-        if getArticle(article)[1]['creationDate'].find('2019') > -1:
-            count += 1
-        
-        presentFile += 1
-    
-    except FileNotFoundError:
-        continue
+    for article in allJournauxSummary[journal].keys():
+        try:
+            auteur.append(allJournauxSummary[journal][article]['author'])
+        except KeyError:
+            pass

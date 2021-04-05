@@ -44,7 +44,7 @@ all_organisations = ["latribune",
 def getArticleByPath(path):
     ArticleInfo = list()
 
-    for file in selectedJsonFiles:
+    for file in path:
         try:
             with open(file, 'r') as article:
                 ArticleInfo.append(json.load(article))
@@ -315,7 +315,7 @@ if __name__ == "__main__":
     test_dataframe = test_dataframe.loc[test_dataframe['score'] < quantile_90]
 
 
-    sns.boxplot(x="slug", y="score", hue = ,data=test_dataframe)
+    sns.boxplot(x="slug", y="score",data=test_dataframe)
     plt.show()
     #test_2 = slug_and_score_by_article_by_lesoleil(hash_article_test)
 
@@ -352,10 +352,15 @@ if __name__ == "__main__":
 
 
 
-def journalSummary(p_journal):
+def journalSummary(p_journal,fileQuantity = 'all'):
+
 
     journalSummary = dict()
     dateRange = pd.date_range(start = '2019-01-01', end = '2019-07-31')
+    if fileQuantity =='all' :
+        pass
+    else:
+        dateRange = dateRange[0:fileQuantity]
     for p_date in dateRange:
         p_date = (str(p_date).split(' ')[0])
         print(p_date)
