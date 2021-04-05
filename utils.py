@@ -8,6 +8,16 @@ import dateutil.parser
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from collections_utilis import *
+import re
+import nltk
+from nltk.corpus import stopwords
+nltk.download('stopwords')
+from nltk.tokenize import word_tokenize
+import spacy
+nlp = spacy.load('fr_core_news_sm')
+import operator
+import random 
 
 
 
@@ -349,6 +359,96 @@ if __name__ == "__main__":
     #         score_per_months.append(get_views_by_hash(hash))
 
 
+
+
+def cleanAuteur(auteur):
+    try:
+        auteur = auteur[0]['name']
+        auteur = auteur.lower()
+        auteur = auteur.replace('î','i')
+        auteur = auteur.replace('è','e')
+        auteur = auteur.replace('é','e')
+        auteur = auteur.replace('ô','o')
+        auteur = auteur.replace('#','')
+        auteur = auteur.replace('*','')
+        auteur = re.sub(r"\s*\(.*\)\s*","",auteur)
+        for word in auteur.split(' '):
+            if "@" in word:
+                
+                auteur = auteur.replace(word,'')
+        
+        auteur = auteur
+        if ' et ' in auteur:
+            auteur = auteur.split(' et ')
+        elif ', ' in auteur:
+            auteur = auteur.split(', ')
+        elif '\r\n' in auteur:
+            auteur = auteur.split('\r\n')
+        else:
+            auteur = [auteur]
+        auteurClean = list()
+        for i in auteur:
+            clean = i.lstrip(' ')
+            clean = clean.rstrip(' ')
+            auteurClean.append(clean)
+        return auteurClean
+    except IndexError:
+        return []
+
+
+def cleanChapters(chapter):
+    structure = list()
+    try:
+        for j in chapter:
+            structure.append(j['type'])
+        
+    except TypeError:
+        pass
+    
+    return structure
+
+
+def cleanCreationDate(date):
+    return (date.astype('datetime64[D]').view('int64') - 4) % 7
+
+def cleanExternalId(ExternalId):
+    if ExternalId == {}:
+        return 0
+    else:
+        return 1
+
+def cleanTitle(title):
+    
+    title = title['fr']
+    token_list = list()
+    spacySentence = nlp(title.lower())
+
+    for token in spacySentence:
+        
+        if (token.text not in spacy.lang.fr.stop_words.STOP_WORDS):
+            
+                
+                if not token.is_punct:
+                    if not token.text.isdigit():
+                        if (token.lemma_ not in spacy.lang.fr.stop_words.STOP_WORDS):
+                            if (token.lemma_.find("\\") == -1):
+                                token_list.append((token.lemma_))
+
+    return token_list
+
+
+
+
+def getTrainingData():
+    trainArticle = get_train_article_over_2019()
+    df = pd.DataFrame(trainArticle)
+    df = df.drop(['type','templateName','canonicalUrlOverride', 'contents','visual', 'availableInPreview','lead','url','id','modificationDate'],axis=1)
+    df['creationDate'] = [cleanCreationDate(i) for i in df['creationDate'].values]
+    df['authors'] = df['authors'].apply(lambda x: cleanAuteur(x))
+    df['chapters'] = df['chapters'].apply(lambda x: cleanChapters(x))
+    df['externalIds'] = df['externalIds'].apply(lambda x: cleanExternalId(x))
+    df['title'] = df['title'].apply(lambda x: cleanTitle(x))
+    return df
 
 
 
