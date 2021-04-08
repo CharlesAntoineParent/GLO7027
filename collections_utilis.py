@@ -25,6 +25,12 @@ def get_train_publication_over_2019():
     train_publication = train_publication_collection.find({"publications.publicationDate" :{"$not": {"$lt": datetime(2019, 1, 1, 0, 0, 0)}}}    )
     return train_publication
 
+def get_test_publication_over_2019():
+    db_online = connect_GLO7027()
+    train_publication_collection = db_online.get_collection("test_publication_info")
+    train_publication = train_publication_collection.find({"publications.publicationDate" :{"$not": {"$lt": datetime(2019, 1, 1, 0, 0, 0)}}}    )
+    return train_publication
+
 
 def get_df_score_ledroit():
     db_online = connect_GLO7027()

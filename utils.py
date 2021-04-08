@@ -17,7 +17,7 @@ from nltk.tokenize import word_tokenize
 import spacy
 nlp = spacy.load('fr_core_news_sm')
 import operator
-import random 
+import random
 
 
 
@@ -285,82 +285,6 @@ def extract_articles_in_season(season, train_test=True):
     return extract_articles_range(seasons[season][0], seasons[season][1], train_test)
 
 
-
-
-
-if __name__ == "__main__":
-
-
-    test = getArticle("ffffdb06d44290491c301af0a08a2e5b")
-    test[1]["title"]["fr"]
-    p_date = "2019-02-01"
-    dict_info_total = get_all_scores_and_view_per_organization_for_a_day(p_date)
-
-
-    testing = slug_and_score_by_article_by_lesoleil("27b803e15021b1313fb1d9750a9d65a7", p_dict_with_score_info = dict_info_total)
-
-
-    #pd.DataFrame(dict_of_score_and_views_for_the_day[article_hash], columns=col_names, index=row_names)
-
-    hash_article_test = "d9b71cfa7d9dfcbae96e390180fd5335"
-    dict_slug_score_leSoleil = {"slug" : [], "score" :  [] }
-    for hash in list(dict_info_total.keys()):
-        dict_value = slug_and_score_by_article_by_lesoleil(hash, p_dict_with_score_info = dict_info_total)
-        if dict_value is not None:
-            dict_slug_score_leSoleil["slug"].append(dict_value["slug"])
-            dict_slug_score_leSoleil["score"].append(dict_value["score"])
-
-
-
-    test_dataframe = pd.DataFrame.from_dict(dict_slug_score_leSoleil)
-    test_dataframe.loc[(test_dataframe.slug == "actualite"), "slug"] = "actualites"
-    #test_dataframe = test_dataframe.groupby(['slug']).reset_index()
-
-    test_dataframe = test_dataframe.loc[(test_dataframe['slug'] == "actualites") or (test_dataframe['slug'] == "affaires")]
-
-
-    quantile_90 = test_dataframe["score"].quantile(0.90)
-
-
-    test_dataframe = test_dataframe.loc[test_dataframe['score'] < quantile_90]
-
-
-    sns.boxplot(x="slug", y="score",data=test_dataframe)
-    plt.show()
-    #test_2 = slug_and_score_by_article_by_lesoleil(hash_article_test)
-
-
-
-
-    testing_hashes = ['0deb8dafb131e6ac8775b2d973c2c306', '4abda728af6e702ffdccecc714ed2fcf', '531fca26523a603539db1ebd7cb5203e', 'eb096788e215d7dd54e001d2cd4423ec', '32245de2f0c9ecc1cf701f7d9ab3485c', 'ec68cd02afeb06180152a15d8cfbf9a7', '465c91f8bc131f4ff55de9c9e7a5fbed', '45dbda2e61b75a1f526a968c546c8595', 'ae340e547032d3cefa0a4fabd23f4cbc', 'af6ba32b67c53e28988beb55cf80fab0']
-    for hash in testing_hashes:
-        test = getArticle(hash)
-        for org in range(len(test[0])):
-            print("hash: ", hash)
-            print("Organisation: ", test[0][org]["organizationKey"])
-            slug = test[0][org]["publications"][0]["slug"]["fr"]
-            slug = slug.split("/")
-            slug = slug[0]
-            slug = "_".join(slug)
-            print("slug: ", slug)
-            print("url: ", test[1]["url"])
-            print("Scores: ")
-            print(dict_info_total[hash])
-            print("------------------------------------")
-
-
-
-    # score_per_months = list()
-    #
-    # for month in range(1, 13):
-    #     articles_ion_month = extract_articles_by_month(month)
-    #     for article in articles_ion_month:
-    #         hash = article['hash']
-    #         score_per_months.append(get_views_by_hash(hash))
-
-
-
-
 def cleanAuteur(auteur):
     try:
         auteur = auteur[0]['name']
@@ -374,9 +298,9 @@ def cleanAuteur(auteur):
         auteur = re.sub(r"\s*\(.*\)\s*","",auteur)
         for word in auteur.split(' '):
             if "@" in word:
-                
+
                 auteur = auteur.replace(word,'')
-        
+
         auteur = auteur
         if ' et ' in auteur:
             auteur = auteur.split(' et ')
@@ -401,10 +325,10 @@ def cleanChapters(chapter):
     try:
         for j in chapter:
             structure.append(j['type'])
-        
+
     except TypeError:
         pass
-    
+
     return structure
 
 
@@ -418,16 +342,16 @@ def cleanExternalId(ExternalId):
         return 1
 
 def cleanTitle(title):
-    
+
     title = title['fr']
     token_list = list()
     spacySentence = nlp(title.lower())
 
     for token in spacySentence:
-        
+
         if (token.text not in spacy.lang.fr.stop_words.STOP_WORDS):
-            
-                
+
+
                 if not token.is_punct:
                     if not token.text.isdigit():
                         if (token.lemma_ not in spacy.lang.fr.stop_words.STOP_WORDS):
@@ -436,18 +360,77 @@ def cleanTitle(title):
 
     return token_list
 
+def replaceSlug(publications,equivalence):
+    slug = publications[0]['slug']['fr'].split('/')[0]
+    try:
+        slug = equivalence[slug]
+    except KeyError:
+        pass
+    return slug
+
+
+def cleanSlug(publications, aGarder):
+    if publications in aGarder:
+        return publications
+    return None
+
+
+def mergeScore(dfInfoPublication):
+    df = pd.concat([get_df_score_lesoleil(),
+                    get_df_score_lavoixdelest(),
+                    get_df_score_ledroit(),
+                    get_df_score_latribune(),
+                    get_df_score_lenouvelliste(),
+                    get_df_score_lequotidien()])
+
+    df = pd.merge(dfInfoPublication, df,how='left',left_on =['_id','organizationKey'], right_on=["hash","source"])
+    return df
+
 
 
 
 def getTrainingData():
+    publicationsTest = get_test_publication_over_2019()
+    publicationsTest = pd.DataFrame(publicationsTest)
+    equivalence = {'actualite':'actualites',
+                   'opinion':'opinions',
+                   'essais-routiers':'auto',
+                   'toit-et-moi':'maison',
+                   'richardtherrien': 'arts',
+                    'richard-therrien': 'arts',
+                   'magazine-affaires':'affaires',
+                   'claude-villeneuve':'chroniques',
+                   'steve-turcotte':'sports',
+                   'perspectives-economiques-2019':'affaires'}
+
+    publicationsTest['publications'] = publicationsTest['publications'].apply(lambda x: replaceSlug(x,equivalence))
+
+    aGarder = publicationsTest['publications'].value_counts()[publicationsTest['publications'].value_counts() > 10]
+
     trainArticle = get_train_article_over_2019()
+    publications = get_train_publication_over_2019()
+    publicationsDf = pd.DataFrame(publications)
+    publicationsDf['_id'] = publicationsDf['id']
+    publicationsDf = publicationsDf.drop(['id','editionId','type'],axis=1)
+    publicationsDf['publications'] = publicationsDf['publications'].apply(lambda x: replaceSlug(x,equivalence))
+    publicationsDf['publications'] = publicationsDf['publications'].apply(lambda x : cleanSlug(x, aGarder))
+    publicationsDf = publicationsDf.dropna()
+    publicationsDf = publicationsDf.drop_duplicates()
+
+
     df = pd.DataFrame(trainArticle)
+    df['_id'] = df['id']
     df = df.drop(['type','templateName','canonicalUrlOverride', 'contents','visual', 'availableInPreview','lead','url','id','modificationDate'],axis=1)
     df['creationDate'] = [cleanCreationDate(i) for i in df['creationDate'].values]
     df['authors'] = df['authors'].apply(lambda x: cleanAuteur(x))
     df['chapters'] = df['chapters'].apply(lambda x: cleanChapters(x))
     df['externalIds'] = df['externalIds'].apply(lambda x: cleanExternalId(x))
     df['title'] = df['title'].apply(lambda x: cleanTitle(x))
+
+    df = pd.merge(df, publicationsDf, how='right', on='_id')
+    df = mergeScore(df)
+
+
     return df
 
 
@@ -466,18 +449,78 @@ def journalSummary(p_journal,fileQuantity = 'all'):
         print(p_date)
         dayInfo = getDayInfo(p_date,p_journal)
 
-        
+
         for view in dayInfo :
             try:
                 journalSummary[view['hash']][view['name']] += 1
             except KeyError:
                 journalSummary[view['hash']] = {'View':0,'View5':0,'View10':0,'View30':0,'View60':0}
                 journalSummary[view['hash']][view['name']] += 1
-    
+
     return journalSummary
 
+if __name__ == "__main__":
 
+    test = getArticle("ffffdb06d44290491c301af0a08a2e5b")
+    test[1]["title"]["fr"]
+    p_date = "2019-02-01"
+    dict_info_total = get_all_scores_and_view_per_organization_for_a_day(p_date)
 
+    testing = slug_and_score_by_article_by_lesoleil("27b803e15021b1313fb1d9750a9d65a7",
+                                                    p_dict_with_score_info=dict_info_total)
+
+    # pd.DataFrame(dict_of_score_and_views_for_the_day[article_hash], columns=col_names, index=row_names)
+
+    hash_article_test = "d9b71cfa7d9dfcbae96e390180fd5335"
+    dict_slug_score_leSoleil = {"slug": [], "score": []}
+    for hash in list(dict_info_total.keys()):
+        dict_value = slug_and_score_by_article_by_lesoleil(hash, p_dict_with_score_info=dict_info_total)
+        if dict_value is not None:
+            dict_slug_score_leSoleil["slug"].append(dict_value["slug"])
+            dict_slug_score_leSoleil["score"].append(dict_value["score"])
+
+    test_dataframe = pd.DataFrame.from_dict(dict_slug_score_leSoleil)
+    test_dataframe.loc[(test_dataframe.slug == "actualite"), "slug"] = "actualites"
+    # test_dataframe = test_dataframe.groupby(['slug']).reset_index()
+
+    test_dataframe = test_dataframe.loc[
+        (test_dataframe['slug'] == "actualites") or (test_dataframe['slug'] == "affaires")]
+
+    quantile_90 = test_dataframe["score"].quantile(0.90)
+
+    test_dataframe = test_dataframe.loc[test_dataframe['score'] < quantile_90]
+
+    sns.boxplot(x="slug", y="score", data=test_dataframe)
+    plt.show()
+    # test_2 = slug_and_score_by_article_by_lesoleil(hash_article_test)
+
+    testing_hashes = ['0deb8dafb131e6ac8775b2d973c2c306', '4abda728af6e702ffdccecc714ed2fcf',
+                      '531fca26523a603539db1ebd7cb5203e', 'eb096788e215d7dd54e001d2cd4423ec',
+                      '32245de2f0c9ecc1cf701f7d9ab3485c', 'ec68cd02afeb06180152a15d8cfbf9a7',
+                      '465c91f8bc131f4ff55de9c9e7a5fbed', '45dbda2e61b75a1f526a968c546c8595',
+                      'ae340e547032d3cefa0a4fabd23f4cbc', 'af6ba32b67c53e28988beb55cf80fab0']
+    for hash in testing_hashes:
+        test = getArticle(hash)
+        for org in range(len(test[0])):
+            print("hash: ", hash)
+            print("Organisation: ", test[0][org]["organizationKey"])
+            slug = test[0][org]["publications"][0]["slug"]["fr"]
+            slug = slug.split("/")
+            slug = slug[0]
+            slug = "_".join(slug)
+            print("slug: ", slug)
+            print("url: ", test[1]["url"])
+            print("Scores: ")
+            print(dict_info_total[hash])
+            print("------------------------------------")
+
+    # score_per_months = list()
+    #
+    # for month in range(1, 13):
+    #     articles_ion_month = extract_articles_by_month(month)
+    #     for article in articles_ion_month:
+    #         hash = article['hash']
+    #         score_per_months.append(get_views_by_hash(hash))
 
     #lenouvelliste = dayPopularity(p_date, "lenouvelliste")
     #lenouvelliste["odeb8dafb131e6ac8775b2d973c2c306"]
