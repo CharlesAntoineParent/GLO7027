@@ -442,6 +442,7 @@ def cleanTitle(title):
 def getTrainingData():
     trainArticle = get_train_article_over_2019()
     df = pd.DataFrame(trainArticle)
+    df['_id'] = df['id']
     df = df.drop(['type','templateName','canonicalUrlOverride', 'contents','visual', 'availableInPreview','lead','url','id','modificationDate'],axis=1)
     df['creationDate'] = [cleanCreationDate(i) for i in df['creationDate'].values]
     df['authors'] = df['authors'].apply(lambda x: cleanAuteur(x))
