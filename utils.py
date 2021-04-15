@@ -374,6 +374,30 @@ def cleanSlug(publications, aGarder):
         return publications
     return None
 
+def cleanChannel(channel):
+    
+    try:
+        channel = channel['fr']
+
+        token_list = list()
+        spacySentence = nlp(channel.lower())
+
+        for token in spacySentence:
+        
+            if (token.text not in spacy.lang.fr.stop_words.STOP_WORDS):
+            
+                if not token.is_punct:
+                    if not token.text.isdigit():
+                        if (token.lemma_ not in spacy.lang.fr.stop_words.STOP_WORDS):
+                            if (token.lemma_.find("\\") == -1):
+                                token_list.append((token.lemma_))
+    except KeyError:
+        token_list = ["vide"]
+    
+    except TypeError:
+        token_list = ["vide"]
+
+    return token_list
 
 def mergeScore(dfInfoPublication):
     df = pd.concat([get_df_score_lesoleil(),
