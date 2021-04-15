@@ -1,15 +1,18 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn import datasets, ensemble
+
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MultiLabelBinarizer
 from collections_utilis import * 
 import seaborn as sns
-import pandas as pd
 import datetime
 from utils import *
+
+
+from sklearn import datasets, ensemble
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MultiLabelBinarizer
 import pickle
 from collections import Counter
 
@@ -18,9 +21,18 @@ with open('training_dataset.pkl', 'rb') as f:
 
 data = data.dropna().reset_index()
 
-data.drop(['_id',  'count', 'organizationKey',
+data = data.drop(['_id', 'hash', 'count', 'organizationKey',
                 'view', 'view5','view10', 'view30','view60',
                 'point_view', 'point_view5', 'point_view10', 'point_view30', 'point_view60'], axis=1)
+
+
+def get_list(string):
+    try:
+        return [string]
+    except IndexError:
+        return ["vide"]
+
+data.publications = data.publications.apply(lambda x : get_list(x))
 
 data_ledroit =   data[data.source == "ledroit"]
 data_lesoleil =   data[data.source == "lesoleil"]
@@ -29,7 +41,13 @@ data_lequotidien =   data[data.source == "lequotidien"]
 data_latribune =   data[data.source == "latribune"]
 data_lavoixdelest =   data[data.source == "lavoixdelest"]
 
-mlb = MultiLabelBinarizer()
+
+#data_ledroit = data_ledroit.reset_index()
+#data_lesoleil = data_lesoleil.reset_index()
+#data_lenouvelliste = data_lenouvelliste.reset_index()
+#data_lequotidien = data_lequotidien.reset_index()
+#data_latribune = data_latribune.reset_index()
+#data_lavoixdelest = data_lavoixdelest.reset_index()
 
 def get_first_title(list):
     try:
@@ -39,8 +57,13 @@ def get_first_title(list):
 
 
 
+
 def get_formatted_training_data(df):
     #data.title = data.title.apply(lambda x : get_first_title(x))
+
+    df = data_ledroit
+
+    mlb = MultiLabelBinarizer()
     title = pd.DataFrame(mlb.fit_transform(df.title),columns=mlb.classes_, index=df.index)
     title_only_alpha = title.loc[:, [k.isalpha() for k in title.keys()]]
     title_only_alpha_frequent = title_only_alpha.loc[:, title_only_alpha.sum(axis=0) > 20]
@@ -52,7 +75,13 @@ def get_formatted_training_data(df):
     channel = pd.DataFrame(mlb.fit_transform(df.channel),columns=mlb.classes_, index=df.index)
     df = pd.concat([df.drop('channel', axis = 1), channel], axis=1)
 
+    slug = pd.DataFrame(mlb.fit_transform(df.publications),columns=mlb.classes_, index=df.index)
+    df = pd.concat([df.drop('publications', axis = 1), slug], axis=1)
+
+    df.reset_index(inplace=True)
+
     df_count_chapters = pd.json_normalize(df.chapters.apply(lambda x : Counter(x))).fillna(0)
+    df_count_chapters = df_count_chapters.add_prefix('chapters_count_').reset_index(inplace=True)
     df = pd.concat([df.drop('chapters', axis = 1), df_count_chapters], axis=1)
     return df
 
@@ -73,12 +102,12 @@ Y_lequotidien = df_lequotidien["score"]
 Y_latribune = df_latribune["score"]
 Y_lavoixdelest = df_lavoixdelest["score"]
 
-X_ledroit = df_ledroit.drop("score", axis = 1)
-X_lesoleil = df_lesoleil.drop("score", axis = 1)
-X_lenouvelliste = df_lenouvelliste.drop("score", axis = 1)
-X_lequotidien = df_lequotidien.drop("score", axis = 1)
-X_latribune = df_latribune.drop("score", axis = 1)
-X_lavoixdelest = df_lavoixdelest.drop("score", axis = 1)
+X_ledroit = df_ledroit.drop(["score", "source", "level_0", "index"], axis = 1)
+X_lesoleil = df_lesoleil.drop(["score", "source", "level_0", "index"], axis = 1)
+X_lenouvelliste = df_lenouvelliste.drop(["score", "source", "level_0", "index"], axis = 1)
+X_lequotidien = df_lequotidien.drop(["score", "source", "level_0", "index"], axis = 1)
+X_latribune = df_latribune.drop(["score", "source", "level_0", "index"], axis = 1)
+X_lavoixdelest = df_lavoixdelest.drop(["score", "source", "level_0", "index"], axis = 1)
 
 
 #[str(i) for i in X.title[3]] 
