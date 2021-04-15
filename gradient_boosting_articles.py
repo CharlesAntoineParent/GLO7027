@@ -1,15 +1,4 @@
-import matplotlib.pyplot as plt
-import numpy as np
-
-from sklearn.inspection import permutation_importance
-from sklearn.metrics import mean_squared_error
-from collections_utilis import * 
-import seaborn as sns
-import datetime
-from utils import *
-
-
-from sklearn import datasets, ensemble
+from sklearn import ensemble
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -21,7 +10,7 @@ with open('training_dataset.pkl', 'rb') as f:
 
 data = data.dropna().reset_index()
 
-data = data.drop(['_id', 'hash', 'count', 'organizationKey',
+data = data.drop(['_id', 'count', 'organizationKey',
                 'view', 'view5','view10', 'view30','view60',
                 'point_view', 'point_view5', 'point_view10', 'point_view30', 'point_view60'], axis=1)
 
@@ -60,8 +49,6 @@ def get_first_title(list):
 
 def get_formatted_training_data(df):
     #data.title = data.title.apply(lambda x : get_first_title(x))
-
-    df = data_ledroit
 
     mlb = MultiLabelBinarizer()
     title = pd.DataFrame(mlb.fit_transform(df.title),columns=mlb.classes_, index=df.index)
@@ -102,13 +89,13 @@ Y_lequotidien = df_lequotidien["score"]
 Y_latribune = df_latribune["score"]
 Y_lavoixdelest = df_lavoixdelest["score"]
 
+
 X_ledroit = df_ledroit.drop(["score", "source", "level_0", "index"], axis = 1)
 X_lesoleil = df_lesoleil.drop(["score", "source", "level_0", "index"], axis = 1)
 X_lenouvelliste = df_lenouvelliste.drop(["score", "source", "level_0", "index"], axis = 1)
 X_lequotidien = df_lequotidien.drop(["score", "source", "level_0", "index"], axis = 1)
 X_latribune = df_latribune.drop(["score", "source", "level_0", "index"], axis = 1)
 X_lavoixdelest = df_lavoixdelest.drop(["score", "source", "level_0", "index"], axis = 1)
-
 
 #[str(i) for i in X.title[3]] 
 #X.title = X.title.apply(lambda x : map(str, x))
@@ -124,7 +111,34 @@ X_train_lequotidien, X_test_lequotidien, y_train_lequotidien, y_test_lequotidien
 X_train_latribune, X_test_latribune, y_train_latribune, y_test_latribune = train_test_split(X_latribune, Y_latribune, test_size=0.1, random_state=42)
 X_train_lavoixdelest, X_test_lavoixdelest, y_train_lavoixdelest, y_test_lavoixdelest = train_test_split(X_lavoixdelest, Y_lavoixdelest, test_size=0.1, random_state=42)
 
+train_hash_ledroit = X_train_ledroit['hash']  
+train_hash_lesoleil = X_train_lesoleil['hash'] 
+train_hash_lenouvelliste = X_train_lenouvelliste['hash'] 
+train_hash_lequotidien = X_train_lequotidien['hash'] 
+train_hash_latribune = X_train_latribune['hash'] 
+train_hash_lavoixdelest = X_train_lavoixdelest['hash'] 
 
+test_hash_ledroit = X_test_ledroit['hash']
+test_hash_lesoleil = X_test_lesoleil['hash']
+test_hash_lenouvelliste = X_test_lenouvelliste['hash']
+test_hash_lequotidien = X_test_lequotidien['hash']
+test_hash_latribune = X_test_latribune['hash']
+test_hash_lavoixdelest = X_test_lavoixdelest['hash']
+
+
+X_train_ledroit = X_train_ledroit.drop("hash", axis = 1)
+X_train_lesoleil = X_train_lesoleil.drop("hash", axis = 1)
+X_train_lenouvelliste = X_train_lenouvelliste.drop("hash", axis = 1)
+X_train_lequotidien = X_train_lequotidien.drop("hash", axis = 1)
+X_train_latribune = X_train_latribune.drop("hash", axis = 1)
+X_train_lavoixdelest = X_train_lavoixdelest.drop("hash", axis = 1)
+
+X_test_ledroit = X_test_ledroit.drop("hash", axis = 1)
+X_test_lesoleil = X_test_lesoleil.drop("hash", axis = 1)
+X_test_lenouvelliste = X_test_lenouvelliste.drop("hash", axis = 1)
+X_test_lequotidien = X_test_lequotidien.drop("hash", axis = 1)
+X_test_latribune = X_test_latribune.drop("hash", axis = 1)
+X_test_lavoixdelest = X_test_lavoixdelest.drop("hash", axis = 1)
 
 
 params = {'n_estimators': 500,
@@ -146,4 +160,11 @@ reg_lenouvelliste.fit(X_train_lenouvelliste, y_train_lenouvelliste)
 reg_lequotidien.fit(X_train_lequotidien, y_train_lequotidien)
 reg_latribune.fit(X_train_latribune, y_train_latribune)
 reg_lavoixdelest.fit(X_train_lavoixdelest, y_train_lavoixdelest)
+
+predict_ledroit = reg_ledroit.predict(X_test_ledroit)
+predict_lesoleil = reg_lesoleil.predict(X_test_lesoleil)
+predict_lenouvelliste = reg_lenouvelliste.predict(X_test_lenouvelliste)
+predict_lequotidien = reg_lequotidien.predict(X_test_lequotidien)
+predict_latribune = reg_latribune.predict(X_test_latribune)
+predict_lavoixdelest = reg_lavoixdelest.predict(X_test_lavoixdelest)
 
