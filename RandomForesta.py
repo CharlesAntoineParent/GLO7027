@@ -5,7 +5,7 @@ import pandas as pd
 import datetime
 from utils import *
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor,GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor,GradientBoostingRegressor, VotingRegressor
 from sklearn.model_selection import RandomizedSearchCV,GridSearchCV
 from scipy.stats import ttest_ind
 import scipy
@@ -239,12 +239,12 @@ bestparamsRf = {'bootstrap': True, 'max_features': 'auto', 'min_samples_split': 
 
 
 n_features = X_train.shape[1]
-n_estimators = [256,512]
-max_depth = [2,4,8]
-learning_rate = [0.3,0.15, 0.1]
+n_estimators = [1024,1500,2056]
+max_depth = [8,10,16]
+learning_rate = [0.1,0.15,0.20,0.25]
 max_features = ['auto']
-min_samples_split = [10,5]
-subsample = [1, 0.5, 0.25]
+min_samples_split = [10,15,20,7]
+subsample = [1]
 grid_search_GB = {'n_estimators': n_estimators,
                'learning_rate': learning_rate,
                'subsample': subsample,
@@ -256,4 +256,11 @@ clf = GridSearchCV(GradientBoostingRegressor(), grid_search_GB, cv=3, n_jobs=-1,
 clf.fit(X_train, y_train)
 clf.best_params_
 evalWorst(X_train, y_train,clf.best_estimator_)
-bestparamsGb = {'learning_rate': 0.25, 'max_features': 'auto', 'min_samples_split': 10, 'n_estimators': 256, 'subsample': 0.5}
+bestparamsGb = {'learning_rate': 0.15, 'max_depth': 8, 'max_features': 'auto', 'min_samples_split': 15, 'n_estimators': 1024, 'subsample': 1}
+
+
+RandomForest = RandomForestRegressor(bootstrap= True, max_features='auto', min_samples_split=20, n_estimators=500)
+GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto',min_samples_split=15,n_estimators=1024,subsample=1)
+finalModel = VotingRegressor([('RandomForest', RandomForest), ('GradiantBoosting', GradiantBoosting)])
+finalModel.fit(X_train, y_train)
+evalWorst(X_train, y_train,finalModel)
