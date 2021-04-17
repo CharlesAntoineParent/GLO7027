@@ -12,7 +12,6 @@ from collections_utilis import *
 import re
 import nltk
 from nltk.corpus import stopwords
-nltk.download('stopwords')
 from nltk.tokenize import word_tokenize
 import spacy
 nlp = spacy.load('fr_core_news_sm')

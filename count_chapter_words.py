@@ -32,5 +32,18 @@ with open("Articles_wordcount.json", 'w') as f:
     json.dump(articles_wordcount, f)
     f.close()
 with open("title_wordcount.json", 'w') as f:
-    json.dump(articles_wordcount, f)
+    json.dump(title_wordcount, f)
     f.close()
+
+
+author_twitter = {}
+for article in collection.find(
+        {'type': 'article', 'creationDate': {'$gte': datetime(2019, 1, 1)}, 'authors.twitter': {'$exists': True}}):
+    for author in article['authors']:
+        if 'twitter' in author.keys() and 'name' in author.keys():
+            author_twitter[author['name']] = author['twitter']
+
+with open("twitter_author_name.json", 'w') as f:
+    json.dump(author_twitter, f)
+    f.close()
+

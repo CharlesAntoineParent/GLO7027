@@ -12,6 +12,7 @@ import scipy
 from sklearn.metrics import fbeta_score, make_scorer
 from sklearn.tree import export_graphviz
 import pydot
+import json
 
 def mann_whitney_u_test(distribution_1, distribution_2):
     u_statistic, p_value = scipy.stats.mannwhitneyu(distribution_1, distribution_2)
@@ -24,6 +25,7 @@ def mann_whitney_u_test(distribution_1, distribution_2):
 
 
 df = pd.read_pickle('test.pkl')
+
 
 wordDict = dict()
 for i in df['title'].values:
@@ -158,8 +160,23 @@ for word in wordToKeep:
 for word in wordToKeep:
     df[f'word_{word}'] = df[f'word_{word}'].apply(lambda x: countWord(x,auteur))
 
+title_word_count = pd.DataFrame.from_dict(json.load(open('title_wordcount.json')), orient='index')
+title_word_count.columns = ['title_word_count']
+article_word_count = pd.DataFrame.from_dict(json.load(open('Articles_wordcount.json')), orient='index')
+article_word_count.columns = ['article_word_count']
 
+df = pd.merge(df, title_word_count, left_on='_id', right_index=True, how='left')
+df = pd.merge(df, article_word_count, left_on='_id', right_index=True, how='left')
 
+# twitter_username = pd.DataFrame.from_dict(json.load(open('twitter_author_name.json')), orient='index')
+# twitter_username.columns = ['twitter']
+# twitter_followers = pd.DataFrame.from_dict(json.load(open('twitter_followers.json')), orient='index')
+# twitter_followers.columns = ['twitter_followers']
+# df = pd.merge(df, twitter_username, left_on='_id', right_index=True, how='left')
+# df = pd.merge(df, twitter_followers, left_on='twitter', right_index=True, how='left')
+# df = df.drop(['twitter'])
+# df['twitter_followers'] = df['twitter_followers'].fillna(0)
+# df['twitter_followers'] = df['twitter_followers'].replace(np.nan, 0)
 
 df = df.drop(['_id','creationDate','authors','title','channel','chapters','organizationKey','hash','count','score','source'],axis=1)
 df['score'] = df['point_view5'].fillna(0) + df['point_view10'].fillna(0) + df['point_view30'].fillna(0) + df['point_view60'].fillna(0)
@@ -174,7 +191,7 @@ for slug in df['publications'].value_counts().keys():
 df = newDf
 df = df.drop(['publications'],axis=1)
 
-
+df = df.fillna(0)
 
 X = df.iloc[:, 0:-1].values
 y = df.iloc[:, -1].values
@@ -264,3 +281,5 @@ GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, ma
 finalModel = VotingRegressor([('RandomForest', RandomForest), ('GradiantBoosting', GradiantBoosting)])
 finalModel.fit(X_train, y_train)
 evalWorst(X_train, y_train,finalModel)
+evalWorst(X_train, y_train,GradiantBoosting)
+evalWorst(X_test, y_test,GradiantBoosting)
