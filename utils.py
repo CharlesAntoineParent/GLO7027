@@ -459,6 +459,13 @@ def journalSummary(p_journal,fileQuantity = 'all'):
 
     return journalSummary
 
+def count_word(doc):
+    doc = nlp(doc)
+    tokens = [x for x in doc]
+    filtered_words = filter(lambda token: not token.is_punct, tokens)
+    count = sum(1 for _ in filtered_words)
+    return count
+
 if __name__ == "__main__":
 
     test = getArticle("ffffdb06d44290491c301af0a08a2e5b")
