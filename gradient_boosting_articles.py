@@ -168,3 +168,4 @@ predict_lequotidien = reg_lequotidien.predict(X_test_lequotidien)
 predict_latribune = reg_latribune.predict(X_test_latribune)
 predict_lavoixdelest = reg_lavoixdelest.predict(X_test_lavoixdelest)
 
+
