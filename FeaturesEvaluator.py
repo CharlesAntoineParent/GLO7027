@@ -18,7 +18,7 @@ class FeaturesEvaluator:
 
     
     def get_model(self):
-        return  self.fitted_model
+        return self.fitted_model
     
     def get_X_train(self):
         return self.X_train 

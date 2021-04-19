@@ -311,10 +311,9 @@ GradiantBoosting.fit(X_train, y_train)
 evalWorst(X_train, y_train, id_train, GradiantBoosting)
 evalWorst(X_test, y_test, id_test, GradiantBoosting)
 
+gb = GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto',
+                                                  min_samples_split=15, n_estimators=128, subsample=1)
 
-gb = GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto', min_samples_split=15,
-                                             n_estimators=128, subsample=1)
-
-rfe = RFECV(gb, step=1, cv=5, verbose=2)
+rfe = RFECV(gb, step=1, cv=5, verbose=True, min_features_to_select=212, n_jobs=-1)
 
 rfe.fit(X_train, y_train)
