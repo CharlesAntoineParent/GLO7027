@@ -6,8 +6,10 @@ import pickle
 from collections import Counter
 from matplotlib import pyplot as plt
 from sklearn.inspection import permutation_importance
+from sklearn.feature_selection import RFECV
 import shap
 import FeaturesEvaluator
+import numpy as np
 
 with open('training_dataset.pkl', 'rb') as f:
     data = pickle.load(f)
@@ -26,6 +28,8 @@ def get_list(string):
         return ["vide"]
 
 data.publications = data.publications.apply(lambda x : get_list(x))
+
+data.keys()
 
 data_ledroit =   data[data.source == "ledroit"]
 #data_lesoleil =   data[data.source == "lesoleil"]
@@ -58,20 +62,20 @@ def get_formatted_training_data(df):
     title = pd.DataFrame(mlb.fit_transform(df.title),columns=mlb.classes_, index=df.index)
     title_only_alpha = title.loc[:, [k.isalpha() for k in title.keys()]]
     title_only_alpha_frequent = title_only_alpha.loc[:, title_only_alpha.sum(axis=0) > 50]
-    df = pd.concat([df.drop('title', axis = 1), title_only_alpha_frequent], axis=1)
+    df = pd.concat([df.drop('title', axis = 1), title_only_alpha_frequent.add_prefix('title_')], axis=1)
 
     authors = pd.DataFrame(mlb.fit_transform(df.authors),columns=mlb.classes_, index=df.index)
     authors_only_alpha = authors.loc[:, [k.isalpha() for k in authors.keys()]]
     authors_only_alpha_frequent = authors_only_alpha.loc[:, authors_only_alpha.sum(axis=0) > 10]
-    df = pd.concat([df.drop('authors', axis = 1), authors_only_alpha_frequent], axis=1)
+    df = pd.concat([df.drop('authors', axis = 1), authors_only_alpha_frequent.add_prefix('authors_')], axis=1)
 
     channel = pd.DataFrame(mlb.fit_transform(df.channel),columns=mlb.classes_, index=df.index)
     channel_only_alpha = channel.loc[:, [k.isalpha() for k in channel.keys()]]
     channel_only_alpha_frequent = channel_only_alpha.loc[:, channel_only_alpha.sum(axis=0) > 10]
-    df = pd.concat([df.drop('channel', axis = 1), channel_only_alpha_frequent], axis=1)
+    df = pd.concat([df.drop('channel', axis = 1), channel_only_alpha_frequent.add_prefix('channel_')], axis=1)
 
     slug = pd.DataFrame(mlb.fit_transform(df.publications),columns=mlb.classes_, index=df.index)
-    df = pd.concat([df.drop('publications', axis = 1), slug], axis=1)
+    df = pd.concat([df.drop('publications', axis = 1), slug.add_prefix('slug_')], axis=1)
 
     df.reset_index(inplace=True)
 
@@ -89,6 +93,13 @@ df_ledroit = get_formatted_training_data(data_ledroit)
 #df_latribune = get_formatted_training_data(data_latribune)
 #df_lavoixdelest = get_formatted_training_data(data_lavoixdelest)
 
+
+df_ledroit["random_noise"] = np.random.normal(loc=0, scale=1, size = df_ledroit.shape[0])
+#df_lesoleil = get_formatted_training_data(data_lesoleil)
+#df_lenouvelliste = get_formatted_training_data(data_lenouvelliste)
+#df_lequotidien = get_formatted_training_data(data_lequotidien)
+#df_latribune = get_formatted_training_data(data_latribune)
+#df_lavoixdelest = get_formatted_training_data(data_lavoixdelest)
 
 Y_ledroit = df_ledroit["score"]
 #Y_lesoleil = df_lesoleil["score"]
@@ -149,8 +160,8 @@ X_test_ledroit = X_test_ledroit.drop("hash", axis = 1)
 #X_test_lavoixdelest = X_test_lavoixdelest.drop("hash", axis = 1)
 
 
-params = {'n_estimators': 500,
-        'max_depth': 4,
+params = {'n_estimators': 128,
+        'max_depth': 7,
         'min_samples_split': 5,
         'learning_rate': 0.01,
         'loss': 'ls'}
@@ -179,7 +190,6 @@ predict_ledroit = reg_ledroit.predict(X_test_ledroit)
 
 reg_ledroit.score(X_test_ledroit,y_test_ledroit )
 
-reg_ledroit.feature_importances_
 
 
 
@@ -191,10 +201,81 @@ ledroit_Evaluator = FeaturesEvaluator.FeaturesEvaluator(reg_ledroit, X_train_led
 
 
 r2 = ledroit_Evaluator.get_r2_score()
-importance = ledroit_Evaluator.get_sorted_importance(True)
-permutation_importance_val = ledroit_Evaluator.get_sorted_permutaion_importance()
+pd_importance = pd.DataFrame.from_dict(ledroit_Evaluator.get_sorted_importance(False))
+pd_permutation_importance_val = pd.DataFrame.from_dict(ledroit_Evaluator.get_sorted_permutaion_importance(False))
+pd_SHAP = pd.DataFrame.from_dict(ledroit_Evaluator.get_sorted_SHAP_values())
+treshhold = pd_SHAP[pd_SHAP["feature"] == "random_noise"]
+treshhold = float(abs(treshhold.SHAP_value))
+
+dfs = [pd_importance, pd_permutation_importance_val, pd_SHAP]
+dfs[0].join(dfs[1:])
+
+test = pd_SHAP[pd_SHAP.SHAP_value < treshhold]
+test = test[test.SHAP_value > -treshhold]
+
+
+
+
+a = ledroit_Evaluator.get_sorted_SHAP_values()
+
 #ledroit_Evaluator.get_correlation_heatmap()
+pd.concat(
+    (iDF.set_index('feature') for iDF in [pd_importance, pd_permutation_importance_val, pd_SHAP]),
+    axis=1, join='inner'
+)
+
+df_total = pd_importance.merge(pd_permutation_importance_val, how='left').merge(pd_SHAP, how='left')
+
+
 
 ledroit_Evaluator.get_SHAP_values_bar_plot()
 ledroit_Evaluator.get_SHAP_values_impact_model_output()
-ledroit_Evaluator.get_dependence_plot(["rank(1)", "monde"])
+#ledroit_Evaluator.get_dependence_plot(["rank(1)", "monde"])
+
+
+
+reg_ledroit_clean = ensemble.GradientBoostingRegressor(**params)
+
+X_train_ledroit_clean = X_train_ledroit.drop(test.feature,  axis = 1)
+reg_ledroit_clean.fit(X_train_ledroit_clean, y_train_ledroit)
+
+
+X_test_ledroit_clean  = X_test_ledroit.drop(test.feature,  axis = 1)
+
+
+reg_ledroit_clean.score(X_test_ledroit_clean,y_test_ledroit )
+
+
+
+
+
+ledroit_Evaluator = FeaturesEvaluator.FeaturesEvaluator(reg_ledroit, X_train_ledroit, y_train_ledroit, X_test_ledroit, y_test_ledroit)
+
+
+
+
+
+
+
+
+params = {'n_estimators': 128,
+        'max_depth': 7,
+        'min_samples_split': 5,
+        'learning_rate': 0.01,
+        'loss': 'ls'}
+
+reg_ledroit = ensemble.GradientBoostingRegressor(**params)
+
+selector = RFECV(reg_ledroit, step=1, cv=5, verbose =3 , min_features_to_select=30)
+selector = selector.fit(X_train_ledroit, y_train_ledroit)
+
+selector.support_
+selector.grid_scores_
+X_to_remove = X_train_ledroit.keys()[np.logical_not(selector.support_)]
+
+reg_ledroit.fit(X_train_ledroit, y_train_ledroit)
+
+
+predict_ledroit = reg_ledroit.predict(X_test_ledroit)
+
+test = pd.DataFrame(selector.transform(X_train_ledroit))
