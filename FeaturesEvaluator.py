@@ -52,7 +52,7 @@ class FeaturesEvaluator:
         sorted_idx = self.perm_importance.importances_mean.argsort()
 
         if plot:
-            plt.barh(self.X_test.keys()[sorted_idx], perm_importance.importances_mean[sorted_idx])
+            plt.barh(self.X_test.keys()[sorted_idx], self.perm_importance.importances_mean[sorted_idx])
             plt.xlabel("Permutation Importance")
             plt.show()
 

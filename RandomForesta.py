@@ -1,4 +1,5 @@
-from collections_utilis import * 
+from collections import defaultdict
+from collections_utilis import *
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -13,6 +14,7 @@ from sklearn.metrics import fbeta_score, make_scorer
 from sklearn.tree import export_graphviz
 import pydot
 import json
+import FeaturesEvaluator
 
 def mann_whitney_u_test(distribution_1, distribution_2):
     u_statistic, p_value = scipy.stats.mannwhitneyu(distribution_1, distribution_2)
@@ -79,7 +81,7 @@ for i in df.chapters.values:
         html.append(i.count('html'))
         slideshow.append(i.count('slideshow'))
         quote.append(i.count('quote'))
-    except (IndexError,TypeError, AttributeError):
+    except (IndexError, TypeError, AttributeError):
         paragraph.append(0)
         video.append(0)
         photo.append(0)
@@ -178,7 +180,11 @@ df = pd.merge(df, article_word_count, left_on='_id', right_index=True, how='left
 # df['twitter_followers'] = df['twitter_followers'].fillna(0)
 # df['twitter_followers'] = df['twitter_followers'].replace(np.nan, 0)
 
-df = df.drop(['_id','creationDate','authors','title','channel','chapters','organizationKey','hash','count','score','source'],axis=1)
+publications = pd.read_csv('publication_count.csv', index_col=0)
+
+df = pd.merge(df, publications, left_on='_id', right_index=True, how='left')
+
+df = df.drop(['creationDate','authors','title','channel','chapters','organizationKey','hash','count','score','source'],axis=1)
 df['score'] = df['point_view5'].fillna(0) + df['point_view10'].fillna(0) + df['point_view30'].fillna(0) + df['point_view60'].fillna(0)
 df = df.drop(['view','view5','view10','view30','view60','point_view','point_view5','point_view10','point_view30','point_view60'],axis=1)
 
@@ -189,6 +195,9 @@ for slug in df['publications'].value_counts().keys():
     newDf = pd.concat([newDf,df_temp],axis=0)
 
 df = newDf
+
+categories = df[['_id', 'publications']].set_index('_id')['publications']
+categories = categories.to_dict()
 df = df.drop(['publications'],axis=1)
 
 df = df.fillna(0)
@@ -198,22 +207,25 @@ y = df.iloc[:, -1].values
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
+id_train = (X_train[:, :1]).flatten()
+id_test = (X_test[:, 1:]).flatten()
 
-def evalWorst(X_test,Y,model):
-    category = ['actualites','affaires', 'arts', 'auto', 'cahiers-speciaux', 'chroniques', 'cinema',
-                'contenu-commandite', 'la-vitrine', 'le-mag', 'maison', 'monde',
-                'opinions', 'science', 'sports']
+X_train = X_train[:, 1:]
+X_test = X_test[:, 1:]
+
+
+
+def evalWorst(X_test, Y, ids, model, dict = categories):
     Y_test = Y
     predictions = model.predict(X_test)
-    dictByChannel = dict()
+    dictByChannel = defaultdict(list)
+
     for i in range(len(X_test)):
-        
-        categoryTmp = category[list(X_test[i][77:92]).index(1)]
-        
-        try:
-            dictByChannel[categoryTmp].append((predictions[i],Y_test[i]))
-        except KeyError:
-            dictByChannel[categoryTmp] = [(predictions[i],Y_test[i])]
+
+        categoryTmp = dict[ids[i]]
+
+        dictByChannel[categoryTmp].append((predictions[i],Y_test[i]))
+
 
     
     intersection = 0
@@ -230,7 +242,6 @@ def evalWorst(X_test,Y,model):
 
     
     return intersection/union
-
 
 n_features = X_train.shape[1]
 n_estimators = [300,500,100]
@@ -281,5 +292,8 @@ GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, ma
 finalModel = VotingRegressor([('RandomForest', RandomForest), ('GradiantBoosting', GradiantBoosting)])
 finalModel.fit(X_train, y_train)
 evalWorst(X_train, y_train,finalModel)
-evalWorst(X_train, y_train,GradiantBoosting)
-evalWorst(X_test, y_test,GradiantBoosting)
+
+GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto',min_samples_split=15,n_estimators=1024,subsample=1)
+GradiantBoosting.fit(X_train, y_train)
+evalWorst(X_train, y_train, id_train, GradiantBoosting)
+evalWorst(X_test, y_test, id_test, GradiantBoosting)
