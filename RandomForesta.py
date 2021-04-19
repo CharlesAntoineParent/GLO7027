@@ -13,6 +13,7 @@ import scipy
 from sklearn.metrics import fbeta_score, make_scorer
 from sklearn.tree import export_graphviz
 import pydot
+from joblib import load, dump
 import json
 import FeaturesEvaluator
 
@@ -208,7 +209,7 @@ y = df.iloc[:, -1].values
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 id_train = (X_train[:, :1]).flatten()
-id_test = (X_test[:, 1:]).flatten()
+id_test = (X_test[:, :1]).flatten()
 
 X_train = X_train[:, 1:]
 X_test = X_test[:, 1:]
@@ -217,6 +218,9 @@ X_test = X_test[:, 1:]
 
 def evalWorst(X_test, Y, ids, model, dict = categories):
     Y_test = Y
+
+    print(ids)
+
     predictions = model.predict(X_test)
     dictByChannel = defaultdict(list)
 
@@ -293,6 +297,8 @@ finalModel = VotingRegressor([('RandomForest', RandomForest), ('GradiantBoosting
 finalModel.fit(X_train, y_train)
 evalWorst(X_train, y_train,finalModel)
 
+
+GradiantBoosting = load('GB.joblib')
 GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto',min_samples_split=15,n_estimators=1024,subsample=1)
 GradiantBoosting.fit(X_train, y_train)
 evalWorst(X_train, y_train, id_train, GradiantBoosting)
