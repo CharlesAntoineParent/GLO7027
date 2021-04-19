@@ -1,5 +1,7 @@
 import json
+import pandas as pd
 from pymongo import MongoClient
+from sklearn.preprocessing import MultiLabelBinarizer
 from utils import count_word
 from datetime import datetime
 from collections import defaultdict
@@ -23,7 +25,14 @@ for article in collection.find({'publications.publicationDate': {'$gte': datetim
 for key, value in publication.items():
     publication[key] = list(value)
 
+nom_journaux = set()
+for value in publication.values():
+    for journal in value:
+        nom_journaux.add(journal)
 
-with open("publication_count.json", 'w') as f:
-    json.dump(publication, f)
-    f.close()
+df = pd.json_normalize(publication).transpose()
+
+mlb = MultiLabelBinarizer()
+title = pd.DataFrame(mlb.fit_transform(df[0]),columns=mlb.classes_, index=df.index)
+
+title.to_csv('publication_count.csv')
