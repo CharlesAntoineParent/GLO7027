@@ -1,7 +1,9 @@
 from matplotlib import pyplot as plt
 from sklearn.inspection import permutation_importance
+from sklearn.feature_selection import RFECV
 import shap
 import seaborn as sns
+import pandas as pd
 
 class FeaturesEvaluator:
     """[summary] https://mljar.com/blog/feature-importance-xgboost/
@@ -52,11 +54,11 @@ class FeaturesEvaluator:
         sorted_idx = self.perm_importance.importances_mean.argsort()
 
         if plot:
-            plt.barh(self.X_test.keys()[sorted_idx], perm_importance.importances_mean[sorted_idx])
+            plt.barh(self.X_test.keys()[sorted_idx], self.perm_importance.importances_mean[sorted_idx])
             plt.xlabel("Permutation Importance")
             plt.show()
 
-        return {'feature':self.X_test.keys()[sorted_idx], 'importance': self.perm_importance.importances_mean[sorted_idx]}
+        return {'feature':self.X_test.keys()[sorted_idx], 'importance_permutation': self.perm_importance.importances_mean[sorted_idx]}
 
     def get_correlation_heatmap(self):
         sorted_idx = self.perm_importance.importances_mean.argsort()
@@ -69,8 +71,18 @@ class FeaturesEvaluator:
                 )
         plt.show();
 
-    def get_SHAP_values(self):
-        return self.SHAP_values
+    
+
+
+    def get_sorted_mean_SHAP_values(self):
+        mean_array_SHAP = self.SHAP_values.mean(axis = 0)
+        sorted_idx =mean_array_SHAP.argsort()
+        return {'feature':self.X_test.keys()[sorted_idx], 'SHAP_value': mean_array_SHAP[sorted_idx]}
+
+    def get_df_SHAP_values(self):
+        df = pd.DataFrame(self.SHAP_values, columns=self.X_test.keys(), index=self.X_test.keys())
+        return df
+
 
     def get_SHAP_values_bar_plot(self):
         shap.summary_plot(self.get_SHAP_values(), self.X_test, plot_type="bar")
