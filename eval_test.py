@@ -244,4 +244,4 @@ for value in worst_articles.values():
     all_worst_articles += value
 
 all_worst_articles = [x[0] for x in all_worst_articles]
-pd.DataFrame(all_worst_articles).to_csv('predicted_articles.csv')
+pd.DataFrame(all_worst_articles).to_csv('predicted_articles.csv', index=None)
