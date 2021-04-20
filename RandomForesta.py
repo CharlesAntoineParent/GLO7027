@@ -1,7 +1,5 @@
 from collections import defaultdict
-
 from sklearn.feature_selection import RFECV
-
 from collections_utilis import *
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -190,8 +188,6 @@ publications = pd.read_csv('publication_count.csv', index_col=0)
 
 df = pd.merge(df, publications, left_on='_id', right_index=True, how='left')
 
-df["random_noise"] = np.random.normal(loc=0, scale=1, size=df.shape[0])
-
 df = df.drop(
     ['creationDate', 'authors', 'title', 'channel', 'chapters', 'organizationKey', 'hash', 'count', 'score', 'source'],
     axis=1)
@@ -229,8 +225,6 @@ X_test = X_test[:, 1:]
 
 def evalWorst(X_test, Y, ids, model, dict=categories):
     Y_test = Y
-
-    print(ids)
 
     predictions = model.predict(X_test)
     dictByChannel = defaultdict(list)
@@ -312,8 +306,9 @@ evalWorst(X_train, y_train, id_train, GradiantBoosting)
 evalWorst(X_test, y_test, id_test, GradiantBoosting)
 
 gb = GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto',
-                                                  min_samples_split=15, n_estimators=128, subsample=1)
+                                                  min_samples_split=15, n_estimators=256, subsample=1)
 
-rfe = RFECV(gb, step=1, cv=5, verbose=True, min_features_to_select=212, n_jobs=-1)
+rfe = RFECV(gb, step=1, cv=5, verbose=True, min_features_to_select=30, n_jobs=-1)
 
 rfe.fit(X_train, y_train)
+

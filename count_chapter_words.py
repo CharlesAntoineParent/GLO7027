@@ -12,6 +12,7 @@ collection = db_online.get_collection("train_article_info")
 test = collection.find().next()
 
 articles_wordcount = {}
+title_wordcounts = {}
 i=0
 
 for article in collection.find({'type': 'article', 'creationDate': {'$gte': datetime(2019, 1, 1)}}):
@@ -27,6 +28,7 @@ for article in collection.find({'type': 'article', 'creationDate': {'$gte': date
             for t in text:
                 wordcount += count_word(t)
     articles_wordcount[article['id']] = wordcount
+    title_wordcounts[article['id']] = title_wordcount
 
 with open("Articles_wordcount.json", 'w') as f:
     json.dump(articles_wordcount, f)

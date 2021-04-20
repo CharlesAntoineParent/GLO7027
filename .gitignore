@@ -8,3 +8,8 @@ data
 .png
 figures
 exam
+/venv/*
+__pycache__/*
+.idea/*
+graphique/*
+.gitignore

@@ -10,7 +10,7 @@ from collections import defaultdict
 online_client = MongoClient("mongodb+srv://Olivier:Olivier7027@cluster0.y7acq.mongodb.net/GLO-7027-13?retryWrites=true&w=majority")
 db_online = online_client.get_database("GLO-7027-13")
 
-collection = db_online.get_collection("train_publication_info")
+collection = db_online.get_collection("test_publication_info")
 
 test = collection.find().next()
 
@@ -35,4 +35,4 @@ df = pd.json_normalize(publication).transpose()
 mlb = MultiLabelBinarizer()
 title = pd.DataFrame(mlb.fit_transform(df[0]),columns=mlb.classes_, index=df.index)
 
-title.to_csv('publication_count.csv')
+title.to_csv('publication_count_test.csv')

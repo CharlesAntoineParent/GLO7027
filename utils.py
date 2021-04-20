@@ -432,6 +432,47 @@ def getTrainingData():
 
     return df
 
+def getTestData():
+    publicationsTest = get_test_publication_over_2019()
+    publicationsTest = pd.DataFrame(publicationsTest)
+    equivalence = {'actualite':'actualites',
+                   'opinion':'opinions',
+                   'essais-routiers':'auto',
+                   'toit-et-moi':'maison',
+                   'richardtherrien': 'arts',
+                    'richard-therrien': 'arts',
+                   'magazine-affaires':'affaires',
+                   'claude-villeneuve':'chroniques',
+                   'steve-turcotte':'sports',
+                   'perspectives-economiques-2019':'affaires'}
+
+    publicationsTest['publications'] = publicationsTest['publications'].apply(lambda x: replaceSlug(x,equivalence))
+
+    aGarder = publicationsTest['publications'].value_counts()[publicationsTest['publications'].value_counts() > 10]
+
+    trainArticle = get_test_article_over_2019()
+    publications = get_test_publication_over_2019()
+    publicationsDf = pd.DataFrame(publications)
+    publicationsDf['_id'] = publicationsDf['id']
+    publicationsDf = publicationsDf.drop(['id','editionId','type'],axis=1)
+    publicationsDf['publications'] = publicationsDf['publications'].apply(lambda x: replaceSlug(x,equivalence))
+    publicationsDf['publications'] = publicationsDf['publications'].apply(lambda x : cleanSlug(x, aGarder))
+    publicationsDf = publicationsDf.dropna()
+    publicationsDf = publicationsDf.drop_duplicates()
+
+
+    df = pd.DataFrame(trainArticle)
+    df['_id'] = df['id']
+    df = df.drop(['type','templateName','canonicalUrlOverride','visual', 'availableInPreview','lead','url','id','modificationDate'],axis=1)
+    df['creationDate'] = [cleanCreationDate(i) for i in df['creationDate'].values]
+    df['authors'] = df['authors'].apply(lambda x: cleanAuteur(x))
+    df['chapters'] = df['chapters'].apply(lambda x: cleanChapters(x))
+    df['externalIds'] = df['externalIds'].apply(lambda x: cleanExternalId(x))
+    df['title'] = df['title'].apply(lambda x: cleanTitle(x))
+
+    df = pd.merge(df, publicationsDf, how='right', on='_id')
+
+    return df
 
 
 def journalSummary(p_journal,fileQuantity = 'all'):

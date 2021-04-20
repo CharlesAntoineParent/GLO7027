@@ -18,6 +18,12 @@ def get_train_article_over_2019():
     train_article = train_article_collection.find({"creationDate" : {"$not" :{"$lt": datetime(2019, 1, 1, 0, 0, 0)}}}, )
     return train_article
 
+def get_test_article_over_2019():
+    db_online = connect_GLO7027()
+    train_article_collection = db_online.get_collection("test_article_info")
+    train_article = train_article_collection.find()
+    return train_article
+
 
 def get_train_publication_over_2019():
     db_online = connect_GLO7027()
