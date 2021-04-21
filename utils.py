@@ -382,15 +382,48 @@ def mergeScore(dfInfoPublication):
                     get_df_score_lenouvelliste(),
                     get_df_score_lequotidien()])
 
-    df = pd.merge(dfInfoPublication, df,how='left',left_on =['_id','organizationKey'], right_on=["hash","source"])
+    #df = pd.DataFrame({"hash":["A", "B", "B", "C"],"score":[1,2,5, 10], "source":[1,2,5, 10] })
+    #df.drop("source", axis =1)
+    df['score'] = df['view'].fillna(0) *1 + df['view5'].fillna(0) *1 + df['point_view10'].fillna(0) *2 + df['view30'].fillna(0) * 5 +  df['view60'].fillna(0) *10
+#    'point_view60'].fillna(0)
+    df = df[["hash", "score"]]
+    df_agg =  df.groupby("hash").agg("sum").reset_index()
+
+    df = pd.merge(dfInfoPublication, df_agg,how='left', left_on ='_id', right_on="hash")
     return df
 
+
+#df = pd.DataFrame({"hash":["A", "A", "B", "B", "C"], "slug":["arts", "actualites", "auto", "t3", "chroniques"], "score":[1,2,5, 7, 10], "source":[1,2,5, 7, 10] })
+
+
+
+#list_test = sorted(dict_occurence_slug, key=lambda k: dict_occurence_slug[k], reverse = True)     
+
+#serieslistslughash= pickle.load( open( "listSlugHash.pkl", "rb" ) ).reset_index()
+#list_publication = list(df.hash.unique())
+
+#test = serieslistslughash.loc[0]["publications"]
+
+
+#list_pub = set(["C", "A", "B", "D", "B"])
+
+def get_most_frequent_pub_among_list(list_publication, list_sorted = ['actualites', 'sports', 'opinions', 'arts', 'affaires', 'le-mag', 'la-vitrine', 'auto', 'toit-et-moi', 'maison', 'chroniques', 'science', 'cinema', 'cahiers-speciaux', 'monde', 'la-voix-de-sainte-cecile-de-milton', 'zone', 'contenu-commandite', 'richardtherrien']):
+    for pub in list_sorted:
+        try:
+            if pub in list_publication:
+                return pub
+        except TypeError:
+            return None
+    return None
+
+#serieslistslughash['publications'] = serieslistslughash['publications'].apply(lambda x:get_most_frequent_pub_among_list(x))
 
 
 
 def getTrainingData():
     publicationsTest = get_test_publication_over_2019()
     publicationsTest = pd.DataFrame(publicationsTest)
+
     equivalence = {'actualite':'actualites',
                    'opinion':'opinions',
                    'essais-routiers':'auto',
@@ -406,18 +439,24 @@ def getTrainingData():
 
     aGarder = publicationsTest['publications'].value_counts()[publicationsTest['publications'].value_counts() > 10]
 
-    trainArticle = get_train_article_over_2019()
     publications = get_train_publication_over_2019()
     publicationsDf = pd.DataFrame(publications)
+    publicationsDf = publicationsDf.drop("organizationKey", axis=1)
     publicationsDf['_id'] = publicationsDf['id']
     publicationsDf = publicationsDf.drop(['id','editionId','type'],axis=1)
-    publicationsDf['publications'] = publicationsDf['publications'].apply(lambda x: replaceSlug(x,equivalence))
+    publicationsDf['publications'] = publicationsDf['publications'].apply(lambda x : replaceSlug(x,equivalence))
     publicationsDf['publications'] = publicationsDf['publications'].apply(lambda x : cleanSlug(x, aGarder))
+    publicationsDf = publicationsDf.groupby("_id")["publications"].apply(set).reset_index(name = "publications")
+    publicationsDf['publications'] = publicationsDf['publications'].apply(lambda x : get_most_frequent_pub_among_list(x))
     publicationsDf = publicationsDf.dropna()
     publicationsDf = publicationsDf.drop_duplicates()
 
-
+    
+    trainArticle = get_train_article_over_2019()
     df = pd.DataFrame(trainArticle)
+    #df.drop("organizationKey", axis=1)
+
+    print(df.columns)
     df['_id'] = df['id']
     df = df.drop(['type','templateName','canonicalUrlOverride', 'contents','visual', 'availableInPreview','lead','url','id','modificationDate'],axis=1)
     df['creationDate'] = [cleanCreationDate(i) for i in df['creationDate'].values]
@@ -425,10 +464,12 @@ def getTrainingData():
     df['chapters'] = df['chapters'].apply(lambda x: cleanChapters(x))
     df['externalIds'] = df['externalIds'].apply(lambda x: cleanExternalId(x))
     df['title'] = df['title'].apply(lambda x: cleanTitle(x))
-
-    df = pd.merge(df, publicationsDf, how='right', on='_id')
+    
+    print(df.shape[0])
+    df = pd.merge(df, publicationsDf, how='left', on='_id')
+    print(df.shape[0])
     df = mergeScore(df)
-
+    #print(df.shape[0])
 
     return df
 

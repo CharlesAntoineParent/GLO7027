@@ -1,7 +1,9 @@
 from matplotlib import pyplot as plt
 from sklearn.inspection import permutation_importance
+from sklearn.feature_selection import RFECV
 import shap
 import seaborn as sns
+import pandas as pd
 
 class FeaturesEvaluator:
     """[summary] https://mljar.com/blog/feature-importance-xgboost/
@@ -12,13 +14,14 @@ class FeaturesEvaluator:
         self.X_test = p_X_test
         self.Y_train = p_Y_train
         self.Y_test = p_Y_test
-        self.SHAP_explainer = shap.TreeExplainer(self.fitted_model)
-        self.SHAP_values = self.SHAP_explainer.shap_values(self.X_test)
-        self.perm_importance = permutation_importance(self.fitted_model, self.X_test, self.Y_test)
+        self.SHAP_explainer = None
+        self.SHAP_values = None
+        self.perm_importance = None
+
 
     
     def get_model(self):
-        return self.fitted_model
+        return  self.fitted_model
     
     def get_X_train(self):
         return self.X_train 
@@ -49,6 +52,10 @@ class FeaturesEvaluator:
         return {'feature':self.X_test.keys()[sorted_idx], 'importance': self.fitted_model.feature_importances_[sorted_idx]}
 
     def get_sorted_permutaion_importance(self, plot = True):
+        if self.perm_importance is None:
+            self.perm_importance = permutation_importance(self.fitted_model, self.X_test, self.Y_test)
+
+
         sorted_idx = self.perm_importance.importances_mean.argsort()
 
         if plot:
@@ -56,7 +63,7 @@ class FeaturesEvaluator:
             plt.xlabel("Permutation Importance")
             plt.show()
 
-        return {'feature':self.X_test.keys()[sorted_idx], 'importance': self.perm_importance.importances_mean[sorted_idx]}
+        return {'feature':self.X_test.keys()[sorted_idx], 'importance_permutation': self.perm_importance.importances_mean[sorted_idx]}
 
     def get_correlation_heatmap(self):
         sorted_idx = self.perm_importance.importances_mean.argsort()
@@ -69,14 +76,41 @@ class FeaturesEvaluator:
                 )
         plt.show();
 
-    def get_SHAP_values(self):
-        return self.SHAP_values
+    
+
+
+    def get_sorted_mean_SHAP_values(self):
+        if self.SHAP_values is None:
+            self.SHAP_explainer = shap.TreeExplainer(self.fitted_model)
+            self.SHAP_values = self.SHAP_explainer.shap_values(self.X_test)
+            
+        mean_array_SHAP = self.SHAP_values.mean(axis = 0)
+        sorted_idx =mean_array_SHAP.argsort()
+        return {'feature':self.X_test.keys()[sorted_idx], 'SHAP_value': mean_array_SHAP[sorted_idx]}
+
+    def get_df_SHAP_values(self):
+        if self.SHAP_values is None:
+            self.SHAP_explainer = shap.TreeExplainer(self.fitted_model)
+            self.SHAP_values = self.SHAP_explainer.shap_values(self.X_test)
+        df = pd.DataFrame(self.SHAP_values, columns=self.X_test.keys(), index=self.X_test.keys())
+        return df
+
 
     def get_SHAP_values_bar_plot(self):
-        shap.summary_plot(self.get_SHAP_values(), self.X_test, plot_type="bar")
+        if self.SHAP_values is None:
+            self.SHAP_explainer = shap.TreeExplainer(self.fitted_model)
+            self.SHAP_values = self.SHAP_explainer.shap_values(self.X_test)
+
+        shap.summary_plot(self.SHAP_values, self.X_test, plot_type="bar")
 
     def get_SHAP_values_impact_model_output(self):
-        shap.summary_plot(self.get_SHAP_values(), self.X_test, plot_type="bar")
+        if self.SHAP_values is None:
+            self.SHAP_explainer = shap.TreeExplainer(self.fitted_model)
+            self.SHAP_values = self.SHAP_explainer.shap_values(self.X_test)
+        shap.summary_plot(self.SHAP_values(), self.X_test, plot_type="bar")
 
     def get_dependence_plot(self, p_feature):
+        if self.SHAP_values is None:
+            self.SHAP_explainer = shap.TreeExplainer(self.fitted_model)
+            self.SHAP_values = self.SHAP_explainer.shap_values(self.X_test)
         shap.dependence_plot(p_feature, self.SHAP_values, self.X_test)

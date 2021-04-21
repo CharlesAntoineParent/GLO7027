@@ -1,13 +1,12 @@
 from collections import defaultdict
-
 from sklearn.feature_selection import RFECV
 
-from collections_utilis import *
-import seaborn as sns
+#from collections_utilis import *
+#import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import datetime
-from utils import *
+#from utils import *
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, VotingRegressor
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
@@ -15,22 +14,23 @@ from scipy.stats import ttest_ind
 import scipy
 from sklearn.metrics import fbeta_score, make_scorer
 from sklearn.tree import export_graphviz
-import pydot
+#import pydot
 from joblib import load, dump
 import json
 import FeaturesEvaluator
+import pickle
+import shap 
+import numpy as np
 
-
-def mann_whitney_u_test(distribution_1, distribution_2):
-    u_statistic, p_value = scipy.stats.mannwhitneyu(distribution_1, distribution_2)
-    return u_statistic, p_value
+#def mann_whitney_u_test(distribution_1, distribution_2):
+#    u_statistic, p_value = scipy.stats.mannwhitneyu(distribution_1, distribution_2)
+#    return u_statistic, p_value
 
 
 #### MAIN FUNCTION ####
-# Perform the Mann-Whitney U Test on the two distributions
-
-
-df = pd.read_pickle('test.pkl')
+# Perform the Mann-Whitney U Test on the two distributions if(420) print 69
+df_init = pd.read_pickle('test_new2.p')
+df = pd.read_pickle('test_new2.p')
 
 wordDict = dict()
 for i in df['title'].values:
@@ -148,15 +148,15 @@ df['populariteAuteur'] = df["authors"].apply(
     lambda x: populariteAuteur(x, np.array(list(listauteurSplitByPopularity.values())).mean(),
                                np.array(list(listauteurSplitByPopularity.values())).std(), listauteurSplitByPopularity))
 
-dummiesOrganisation = pd.get_dummies(df['organizationKey'])
-df = pd.concat([df, dummiesOrganisation], axis=1)
+#dummiesOrganisation = pd.get_dummies(df['organizationKey'])
+#df = pd.concat([df, dummiesOrganisation], axis=1)
 df['populariteAuteur'] = df['populariteAuteur'].fillna(0)
 
 dummiesPublication = pd.get_dummies(df['publications'])
 df = pd.concat([df, dummiesPublication], axis=1)
 df.externalIds = df.externalIds.fillna(0)
-df['score'] = df['point_view5'].fillna(0) + df['point_view10'].fillna(0) + df['point_view30'].fillna(0) + df[
-    'point_view60'].fillna(0)
+#df['score']# = df['point_view5'].fillna(0) + df['point_view10'].fillna(0) + df['point_view30'].fillna(0) + df[
+#    #'point_view60'].fillna(0)
 wordToKeep = list()
 for word in wordDict.keys():
     if wordSignifiance(word)[1] < 0.01:
@@ -186,20 +186,18 @@ df = df.drop(['twitter'], axis=1)
 df['twitter_followers'] = df['twitter_followers'].fillna(0)
 df['twitter_followers'] = df['twitter_followers'].replace(np.nan, 0)
 
-publications = pd.read_csv('publication_count.csv', index_col=0)
+journal_publications = pd.read_csv('publication_count.csv', index_col=0)
 
-df = pd.merge(df, publications, left_on='_id', right_index=True, how='left')
+df = pd.merge(df, journal_publications, left_on='_id', right_index=True, how='left')
 
-df["random_noise"] = np.random.normal(loc=0, scale=1, size=df.shape[0])
+#df["random_noise"] = np.random.normal(loc=0, scale=1, size=df.shape[0])
 
-df = df.drop(
-    ['creationDate', 'authors', 'title', 'channel', 'chapters', 'organizationKey', 'hash', 'count', 'score', 'source'],
-    axis=1)
-df['score'] = df['point_view5'].fillna(0) + df['point_view10'].fillna(0) + df['point_view30'].fillna(0) + df[
-    'point_view60'].fillna(0)
-df = df.drop(
-    ['view', 'view5', 'view10', 'view30', 'view60', 'point_view', 'point_view5', 'point_view10', 'point_view30',
-     'point_view60'], axis=1)
+df = df.drop(    ['creationDate', 'authors', 'title', 'channel', 'chapters',  'hash'],    axis=1) # 'organizationKey', 'count', 'source'
+#df['score'] = df['point_view5'].fillna(0) + df['point_view10'].fillna(0) + df['point_view30'].fillna(0) + df[
+#    'point_view60'].fillna(0)
+#df = df.drop(
+#    ['view', 'view5', 'view10', 'view30', 'view60', 'point_view', 'point_view5', 'point_view10', 'point_view30',
+#     'point_view60'], axis=1)
 
 newDf = pd.DataFrame()
 for slug in df['publications'].value_counts().keys():
@@ -215,16 +213,17 @@ df = df.drop(['publications'], axis=1)
 
 df = df.fillna(0)
 
-X = df.iloc[:, 0:-1].values
-y = df.iloc[:, -1].values
+X = df.iloc[:, 0:-1]
+y = df.iloc[:, -1]
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-id_train = (X_train[:, :1]).flatten()
-id_test = (X_test[:, :1]).flatten()
+id_train = X_train._id
+id_test = X_test._id
 
-X_train = X_train[:, 1:]
-X_test = X_test[:, 1:]
+X_train = X_train.drop("_id", axis = 1)
+X_test = X_test.drop("_id", axis = 1)
+
 
 
 def evalWorst(X_test, Y, ids, model, dict=categories):
@@ -254,66 +253,218 @@ def evalWorst(X_test, Y, ids, model, dict=categories):
 
     return intersection / union
 
+#
+#
+#n_features = X_train.shape[1]
+#n_estimators = [300, 500, 100]
+#max_features = ['auto']
+#min_samples_split = [18, 20, 22, 24]
+#bootstrap = [True]
+#
+#grid_search = {'n_estimators': n_estimators,
+#               'max_features': max_features,
+#               'min_samples_split': min_samples_split,
+#               'bootstrap': bootstrap}
+#rf = RandomForestRegressor()
+#rf_grid_search = GridSearchCV(estimator=rf, param_grid=grid_search,
+#                              cv=3, n_jobs=-1, verbose=2)
+#rf_grid_search.fit(X_train, y_train)
+#rf_grid_search
+#rf_grid_search.best_params_
+#predictions = rf_grid_search.predict(X_test)
+#evalWorst(X_train, y_train, rf_grid_search.best_estimator_)
+#
+#bestparamsRf = {'bootstrap': True, 'max_features': 'auto', 'min_samples_split': 20, 'n_estimators': 500}
 
-n_features = X_train.shape[1]
-n_estimators = [300, 500, 100]
-max_features = ['auto']
-min_samples_split = [18, 20, 22, 24]
-bootstrap = [True]
+#n_features = X_train.shape[1]
 
-grid_search = {'n_estimators': n_estimators,
-               'max_features': max_features,
-               'min_samples_split': min_samples_split,
-               'bootstrap': bootstrap}
-rf = RandomForestRegressor()
-rf_grid_search = GridSearchCV(estimator=rf, param_grid=grid_search,
-                              cv=3, n_jobs=-1, verbose=2)
-rf_grid_search.fit(X_train, y_train)
-rf_grid_search
-rf_grid_search.best_params_
-predictions = rf_grid_search.predict(X_test)
-evalWorst(X_train, y_train, rf_grid_search.best_estimator_)
 
-bestparamsRf = {'bootstrap': True, 'max_features': 'auto', 'min_samples_split': 20, 'n_estimators': 500}
 
-n_features = X_train.shape[1]
-n_estimators = [1024, 1500, 2056]
-max_depth = [8, 10, 16]
-learning_rate = [0.1, 0.15, 0.20, 0.25]
-max_features = ['auto']
-min_samples_split = [10, 15, 20, 7]
-subsample = [1]
-grid_search_GB = {'n_estimators': n_estimators,
-                  'learning_rate': learning_rate,
-                  'subsample': subsample,
-                  'max_features': max_features,
-                  'max_depth': max_depth,
-                  'min_samples_split': min_samples_split}
 
-clf = GridSearchCV(GradientBoostingRegressor(), grid_search_GB, cv=3, n_jobs=-1, verbose=2)
-clf.fit(X_train, y_train)
-clf.best_params_
-evalWorst(X_train, y_train, clf.best_estimator_)
-bestparamsGb = {'learning_rate': 0.15, 'max_depth': 8, 'max_features': 'auto', 'min_samples_split': 15,
-                'n_estimators': 1024, 'subsample': 1}
 
-RandomForest = RandomForestRegressor(bootstrap=True, max_features='auto', min_samples_split=20, n_estimators=500)
-GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto', min_samples_split=15,
-                                             n_estimators=1024, subsample=1)
-finalModel = VotingRegressor([('RandomForest', RandomForest), ('GradiantBoosting', GradiantBoosting)])
-finalModel.fit(X_train, y_train)
-evalWorst(X_train, y_train, finalModel)
+#clf.best_params_
+#evalWorst(X_train, y_train, clf.best_estimator_)
+#bestparamsGb = {'learning_rate': 0.15, 'max_depth': 8, 'max_features': 'auto', 'min_samples_split': 15,
+#                'n_estimators': 1024, 'subsample': 1}
+#
+#RandomForest = RandomForestRegressor(bootstrap=True, max_features='auto', min_samples_split=20, n_estimators=500)
+#GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto', min_samples_split=15,
+#                                             n_estimators=1024, subsample=1)
+#finalModel = VotingRegressor([('RandomForest', RandomForest), ('GradiantBoosting', GradiantBoosting)])
+#finalModel.fit(X_train, y_train)
+#evalWorst(X_train, y_train, finalModel)
+#
+#GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto', min_samples_split=15,
+#                                            n_estimators=1024, subsample=1)
+#
+#GradiantBoosting.fit(X_train, y_train)
+#evalWorst(X_train, y_train, id_train, GradiantBoosting)
+#evalWorst(X_test, y_test, id_test, GradiantBoosting)
 
-GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto', min_samples_split=15,
-                                             n_estimators=1024, subsample=1)
+gb  = GradientBoostingRegressor(learning_rate=0.3, max_depth=8, max_features='auto',
+                                                min_samples_split=15, n_estimators=128, subsample=1)
 
-GradiantBoosting.fit(X_train, y_train)
-evalWorst(X_train, y_train, id_train, GradiantBoosting)
-evalWorst(X_test, y_test, id_test, GradiantBoosting)
-
-gb = GradiantBoosting = GradientBoostingRegressor(learning_rate=0.15, max_depth=8, max_features='auto',
-                                                  min_samples_split=15, n_estimators=128, subsample=1)
-
-rfe = RFECV(gb, step=1, cv=5, verbose=True, min_features_to_select=212, n_jobs=-1)
-
+rfe = RFECV(gb, step=5, cv=5, verbose=True, min_features_to_select=53, n_jobs=-1)
 rfe.fit(X_train, y_train)
+
+
+
+rfe = pickle.load( open( "RFE_train.p", "rb" ) )
+
+
+
+#pickle.dump( rfe, open( "RFE_train_clean.p", "wb" ))
+#rfe.support_
+
+#pickle.dump( df, open( "test_new2.p", "wb" ))
+
+#df_X_train = pd.DataFrame(X_train)
+#df_X_train_clean = df_X_train[]
+
+#pickle.dump( rfe, open( "RFE_train_WO_random_noise.p", "wb" ) )
+
+
+#rfe = pickle.load( open( "RFE_train_WO_random_noise.p", "rb" ) )
+
+X_train_clean = X_train.loc[:, rfe.support_.flatten()[:-1]]
+X_test_clean = X_test.loc[:, rfe.support_.flatten()[:-1]]
+
+
+
+#reg_clean.fit(X_train_clean, y_train)
+
+#reg_Evaluator = FeaturesEvaluator.FeaturesEvaluator(reg_clean, X_train_clean, y_train, X_test ,y_test)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#X_to_remove = [np.logical_not(rfe.support_)]
+
+#reg_ledroit.fit(X_train_ledroit, y_train_ledroit)
+
+
+#predict_ledroit = reg_ledroit.predict(X_test_ledroit)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#n_estimators = [1024]
+#max_depth = [4,12]
+#learning_rate = [0.05,  0.3]
+#max_features = ['auto']
+#min_samples_split = [5, 30]
+#subsample = [1]
+#grid_search_GB = {'n_estimators': n_estimators,
+#                'learning_rate': learning_rate,
+#                'subsample': subsample,
+#                'max_features': max_features,
+#                'max_depth': max_depth,
+#                'min_samples_split': min_samples_split}
+
+
+
+#clf = GridSearchCV(GradientBoostingRegressor(), grid_search_GB, cv=3, n_jobs=-1, verbose=2)
+
+#df = pd.DataFrame(X_train)
+
+
+
+
+
+#clf.fit(X_train_clean, y_train)
+
+
+params = {'learning_rate': 0.3, 'max_depth': 8, 'max_features': 'auto', 'min_samples_split': 5, 'n_estimators': 256, 'subsample': 1}
+
+gb_clean =  GradientBoostingRegressor(**params)
+
+gb_clean.fit(X_train_clean, y_train)
+
+clf_3 = pickle.load( open( "clf_3.p", "rb" ) )
+
+clf_3.best_estimator_
+#features_eval = FeaturesEvaluator.FeaturesEvaluator(gb_clean, X_train_clean, y_train, X_test_clean, y_test)
+
+#test = features_eval.get_df_SHAP_values()
+
+pred = gb_clean.predict(X_test_clean)
+erreur = np.array([(pred[i]-y_test.iloc[i])**2 for i in range(len(pred))])
+indicePire = erreur.argmax()
+resultatPire = y_test.iloc[indicePire]
+predictionPire = pred[indicePire]
+xPire = X_test_clean.iloc[indicePire]
+id_test_worst=id_test.iloc[indicePire]
+
+erreur_list = erreur.tolist()
+indicemeilleur = erreur_list.index(sorted(erreur_list)[1])
+resultatmeilleur = y_test.iloc[indicemeilleur]
+predictionmeilleur = pred[indicemeilleur]
+xmeilleur = X_test_clean.iloc[indicemeilleur]
+id_test_meilleur=id_test.iloc[indicemeilleur]
+
+predictionTropBasseIndice = np.array([(pred[i]-y_test.iloc[i]) for i in range(len(pred))]).argmin()
+
+
+#SHAP_explainer = shap.TreeExplainer(gb_clean)
+#SHAP_values = SHAP_explainer.shap_values(X_test_clean)
+df_shap = pd.DataFrame(SHAP_values)
+df_shap.columns = X_train_clean.columns
+df_init2 = df_init[['hash', 'publications']]
+
+df_id = pd.DataFrame(id_test).reset_index()
+#df_id_clean = df_id["_id"]
+df_shap["hash"] = df_id["_id"]
+df_shap = df_shap.set_index("_id")
+df_id = df_id.set_index("_id")
+
+
+
+df_init2 = df_init2.set_index("_id")
+
+
+#x_test_art = x_test
+
+
+df_merged = pd.merge(df_shap, df_init2, on="hash", how ="left")
+df_merged = df_merged.groupby("hash").first()
+df_actualites = df_merged[df_merged["publications"] == "actualites"]
+
+list_keep= [df_merged["publications"] == "arts"]
+df_arts = df_merged.loc[np.array(list_keep[0])]
+X_test_art = pd.DataFrame(X_test_clean.loc[np.array(list_keep[0])]
+
+
+
+SHAP_df_arts = df_arts.drop("publications", axis = 1)
+SHAP_df_arts_reset = SHAP_df_arts.reset_index().drop("_id", axis =1)
+
+
+
+shap.summary_plot(SHAP_df_arts_reset, X_test_clean)
+
+
+resultatPire = y_test.iloc[indicemeilleur]
+shap.force_plot(SHAP_explainer.expected_value, SHAP_values[indicemeilleur], X_test_clean.iloc[[indicemeilleur]],  matplotlib =True)
+    
+shap.plots.waterfall(SHAP_values[0],   matplotlib =True)
